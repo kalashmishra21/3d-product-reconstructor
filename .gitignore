@@ -1,0 +1,179 @@
+# ============================================================
+# 3D Product Reconstructor - Git Ignore
+# ============================================================
+
+# ------------------------------------------------------------
+# Python
+# ------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# Python tooling / caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ------------------------------------------------------------
+# IDE / Editor
+# ------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ------------------------------------------------------------
+# OS / Temporary files
+# ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.temp
+
+# ============================================================
+# DATASET - DO NOT PUSH
+# ============================================================
+
+# Entire ShapeNet / Pixel2Mesh dataset
+Pixel2Mesh/datasets/data/shapenet/
+
+# If dataset files are ever placed elsewhere
+dataset/
+datasets/
+data/
+raw_data/
+processed_data/
+
+# Explicitly ignore the current subset
+Pixel2Mesh/datasets/data/shapenet/small/train/
+Pixel2Mesh/datasets/data/shapenet/small/test/
+
+# Dataset archives
+*.7z
+*.7z.*
+*.001
+*.002
+*.003
+*.004
+*.005
+*.006
+*.tgz
+*.tar
+*.tar.gz
+*.tar.bz2
+*.zip
+*.rar
+*.gz
+*.bz2
+
+# Large data formats
+*.h5
+*.hdf5
+*.npz
+*.npy
+*.pickle
+*.pkl
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+
+# ------------------------------------------------------------
+# Training / Model Artifacts
+# ------------------------------------------------------------
+Pixel2Mesh/checkpoints/
+Pixel2Mesh/logs/
+Pixel2Mesh/outputs/
+Pixel2Mesh/experiments/
+
+# General model artifacts
+checkpoints/
+runs/
+wandb/
+mlruns/
+tensorboard/
+lightning_logs/
+
+# ------------------------------------------------------------
+# Generated 3D / Reconstruction Outputs
+# ------------------------------------------------------------
+outputs/
+results/
+predictions/
+generated/
+inference_outputs/
+
+# Generated mesh files
+*.obj
+*.mtl
+*.ply
+*.off
+*.stl
+*.glb
+*.gltf
+*.fbx
+*.dae
+
+# ------------------------------------------------------------
+# Images / Videos generated during experiments
+# ------------------------------------------------------------
+generated_images/
+generated_renders/
+renders/
+visualizations/
+
+# Ignore very large image/video artifacts
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# ------------------------------------------------------------
+# Logs
+# ------------------------------------------------------------
+*.log
+logs/
+
+# ------------------------------------------------------------
+# Secrets / Environment
+# ------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# ------------------------------------------------------------
+# Frontend / Node
+# ------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.next/
+.cache/
+
+# ------------------------------------------------------------
+# Temporary files
+# ------------------------------------------------------------
+tmp/
+temp/
+*.bak
+*.old
