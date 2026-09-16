@@ -48,12 +48,6 @@ desktop.ini
 # Entire ShapeNet / Pixel2Mesh dataset
 Pixel2Mesh/datasets/data/shapenet/
 
-# If dataset files are ever placed elsewhere
-dataset/
-datasets/
-data/
-raw_data/
-processed_data/
 
 # Explicitly ignore the current subset
 Pixel2Mesh/datasets/data/shapenet/small/train/
