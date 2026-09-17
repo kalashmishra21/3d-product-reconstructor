@@ -171,3 +171,5 @@ tmp/
 temp/
 *.bak
 *.old
+# Local Python virtual environment
+.venv-p2m/
