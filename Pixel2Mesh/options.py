@@ -1,4 +1,4 @@
-import os
+﻿import os
 import pprint
 from argparse import ArgumentParser
 from datetime import datetime
@@ -15,7 +15,7 @@ options = edict()
 options.name = 'p2m'
 options.version = None
 options.num_workers = 1
-options.num_gpus = 1
+options.num_gpus = 0
 options.pin_memory = True
 
 options.log_dir = "logs"
@@ -25,9 +25,10 @@ options.checkpoint_dir = "checkpoints"
 options.checkpoint = None
 
 options.dataset = edict()
-options.dataset.name = "shapenet"
-options.dataset.subset_train = "train_small"
-options.dataset.subset_eval = "test_small"
+options.dataset.name = "reconstructor"
+options.dataset.root = r"C:\Pixel2MeshData\reconstructor_dataset"
+options.dataset.subset_train = "train"
+options.dataset.subset_eval = "test"
 options.dataset.camera_f = [248., 248.]
 options.dataset.camera_c = [111.5, 111.5]
 options.dataset.mesh_pos = [0., 0., -0.8]

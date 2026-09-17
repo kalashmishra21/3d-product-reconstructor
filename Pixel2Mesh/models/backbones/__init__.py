@@ -8,7 +8,7 @@ def get_backbone(options):
             nn_encoder = VGG16TensorflowAlign()
         else:
             nn_encoder = VGG16P2M(pretrained="pretrained" in options.backbone)
-        nn_decoder = VGG16Recons()
+        nn_decoder = VGG16Recons() if getattr(options, 'use_reconstruction', False) else None
     elif options.backbone == "resnet50":
         nn_encoder = resnet50()
         nn_decoder = None

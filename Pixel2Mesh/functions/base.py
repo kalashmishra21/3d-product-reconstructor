@@ -11,6 +11,7 @@ from torch.utils.data.dataloader import default_collate
 import config
 from datasets.imagenet import ImageNet
 from datasets.shapenet import ShapeNet, get_shapenet_collate, ShapeNetImageFolder
+from datasets.reconstructor import ReconstructorTrainingDataset, get_reconstructor_collate
 from functions.saver import CheckpointSaver
 
 
@@ -19,6 +20,7 @@ class CheckpointRunner(object):
                  dataset=None, training=True, shared_model=None):
         self.options = options
         self.logger = logger
+        self.device = torch.device("cuda" if torch.cuda.is_available() and self.options.num_gpus > 0 else "cpu")
 
         # GPUs
         if not torch.cuda.is_available() and self.options.num_gpus > 0:
@@ -62,7 +64,10 @@ class CheckpointRunner(object):
 
     def load_dataset(self, dataset, training):
         self.logger.info("Loading datasets: %s" % dataset.name)
-        if dataset.name == "shapenet":
+        if dataset.name == "reconstructor":
+            return ReconstructorTrainingDataset(dataset.root, dataset.subset_train if training else dataset.subset_eval,
+                                                dataset.mesh_pos, dataset.normalization, dataset.shapenet)
+        elif dataset.name == "shapenet":
             return ShapeNet(config.SHAPENET_ROOT, dataset.subset_train if training else dataset.subset_eval,
                             dataset.mesh_pos, dataset.normalization, dataset.shapenet)
         elif dataset.name == "shapenet_demo":
@@ -72,7 +77,9 @@ class CheckpointRunner(object):
         raise NotImplementedError("Unsupported dataset")
 
     def load_collate_fn(self, dataset, training):
-        if dataset.name == "shapenet":
+        if dataset.name == "reconstructor":
+            return get_reconstructor_collate(dataset.shapenet.num_points)
+        elif dataset.name == "shapenet":
             return get_shapenet_collate(dataset.shapenet.num_points)
         else:
             return default_collate

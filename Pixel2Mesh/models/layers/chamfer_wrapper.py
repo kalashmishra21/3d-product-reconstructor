@@ -1,50 +1,42 @@
-import chamfer
-import torch
+﻿import torch
 import torch.nn as nn
-from torch.autograd import Function
 
-
-# Chamfer's distance module @thibaultgroueix
-# GPU tensors only
-class ChamferFunction(Function):
-    @staticmethod
-    def forward(ctx, xyz1, xyz2):
-        batchsize, n, _ = xyz1.size()
-        _, m, _ = xyz2.size()
-
-        dist1 = torch.zeros(batchsize, n)
-        dist2 = torch.zeros(batchsize, m)
-
-        idx1 = torch.zeros(batchsize, n).type(torch.IntTensor)
-        idx2 = torch.zeros(batchsize, m).type(torch.IntTensor)
-
-        dist1 = dist1.cuda()
-        dist2 = dist2.cuda()
-        idx1 = idx1.cuda()
-        idx2 = idx2.cuda()
-
-        chamfer.forward(xyz1, xyz2, dist1, dist2, idx1, idx2)
-        ctx.save_for_backward(xyz1, xyz2, idx1, idx2)
-        return dist1, dist2, idx1, idx2
-
-    @staticmethod
-    def backward(ctx, graddist1, graddist2, _idx1, _idx2):
-        xyz1, xyz2, idx1, idx2 = ctx.saved_tensors
-        graddist1 = graddist1.contiguous()
-        graddist2 = graddist2.contiguous()
-
-        gradxyz1 = torch.zeros(xyz1.size())
-        gradxyz2 = torch.zeros(xyz2.size())
-
-        gradxyz1 = gradxyz1.cuda()
-        gradxyz2 = gradxyz2.cuda()
-        chamfer.backward(xyz1, xyz2, gradxyz1, gradxyz2, graddist1, graddist2, idx1, idx2)
-        return gradxyz1, gradxyz2
+try:
+    import chamfer
+    HAS_CUDA_CHAMFER = True
+except ImportError:
+    chamfer = None
+    HAS_CUDA_CHAMFER = False
 
 
 class ChamferDist(nn.Module):
+    """
+    Uses the original CUDA Chamfer extension when available.
+    Falls back to native PyTorch cdist on CPU for local smoke tests.
+    """
+
     def __init__(self):
-        super(ChamferDist, self).__init__()
+        super().__init__()
 
     def forward(self, input1, input2):
-        return ChamferFunction.apply(input1, input2)
+        if HAS_CUDA_CHAMFER and input1.is_cuda and input2.is_cuda:
+            return self._cuda_forward(input1, input2)
+
+        distances = torch.cdist(input1, input2, p=2).pow(2)
+        dist1, idx1 = distances.min(dim=2)
+        dist2, idx2 = distances.min(dim=1)
+
+        return dist1, dist2, idx1, idx2
+
+    @staticmethod
+    def _cuda_forward(xyz1, xyz2):
+        batchsize, n, _ = xyz1.size()
+        _, m, _ = xyz2.size()
+
+        dist1 = torch.zeros(batchsize, n, device=xyz1.device)
+        dist2 = torch.zeros(batchsize, m, device=xyz1.device)
+        idx1 = torch.zeros(batchsize, n, dtype=torch.int32, device=xyz1.device)
+        idx2 = torch.zeros(batchsize, m, dtype=torch.int32, device=xyz1.device)
+
+        chamfer.forward(xyz1, xyz2, dist1, dist2, idx1, idx2)
+        return dist1, dist2, idx1, idx2

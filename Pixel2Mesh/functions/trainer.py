@@ -42,7 +42,9 @@ class Trainer(CheckpointRunner):
                 self.model = Classifier(self.options.model, self.options.dataset.num_classes)
             else:
                 raise NotImplementedError("Your model is not found")
-            self.model = torch.nn.DataParallel(self.model, device_ids=self.gpus).cuda()
+            if self.device.type == "cuda" and len(self.gpus) > 1:
+                self.model = torch.nn.DataParallel(self.model, device_ids=self.gpus)
+            self.model = self.model.to(self.device)
 
         # Setup a joint optimizer for the 2 models
         if self.options.optim.name == "adam":
@@ -67,7 +69,7 @@ class Trainer(CheckpointRunner):
 
         # Create loss functions
         if self.options.model.name == "pixel2mesh":
-            self.criterion = P2MLoss(self.options.loss, self.ellipsoid).cuda()
+            self.criterion = P2MLoss(self.options.loss, self.ellipsoid).to(self.device)
         elif self.options.model.name == "classifier":
             self.criterion = CrossEntropyLoss()
         else:
@@ -126,7 +128,7 @@ class Trainer(CheckpointRunner):
             # Iterate over all batches in an epoch
             for step, batch in enumerate(train_data_loader):
                 # Send input to GPU
-                batch = {k: v.cuda() if isinstance(v, torch.Tensor) else v for k, v in batch.items()}
+                batch = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v for k, v in batch.items()}
 
                 # Run training step
                 out = self.train_step(batch)
