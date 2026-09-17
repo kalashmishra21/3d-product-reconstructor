@@ -47,7 +47,9 @@ class Evaluator(CheckpointRunner):
                 self.model = Classifier(self.options.model, self.options.dataset.num_classes)
             else:
                 raise NotImplementedError("Your model is not found")
-            self.model = torch.nn.DataParallel(self.model, device_ids=self.gpus).cuda()
+            if self.device.type == "cuda" and len(self.gpus) > 1:
+                self.model = torch.nn.DataParallel(self.model, device_ids=self.gpus)
+            self.model = self.model.to(self.device)
 
         # Evaluate step count, useful in summary
         self.evaluate_step_count = 0
@@ -107,7 +109,7 @@ class Evaluator(CheckpointRunner):
                 pred_vertices = out["pred_coord"][-1]
                 gt_points = input_batch["points_orig"]
                 if isinstance(gt_points, list):
-                    gt_points = [pts.cuda() for pts in gt_points]
+                    gt_points = [pts.to(self.device) for pts in gt_points]
                 self.evaluate_chamfer_and_f1(pred_vertices, gt_points, input_batch["labels"])
             elif self.options.model.name == "classifier":
                 self.evaluate_accuracy(out, input_batch["labels"])
@@ -139,7 +141,7 @@ class Evaluator(CheckpointRunner):
         # Iterate over all batches in an epoch
         for step, batch in enumerate(test_data_loader):
             # Send input to GPU
-            batch = {k: v.cuda() if isinstance(v, torch.Tensor) else v for k, v in batch.items()}
+            batch = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v for k, v in batch.items()}
 
             # Run evaluation step
             out = self.evaluate_step(batch)

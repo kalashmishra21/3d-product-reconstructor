@@ -1,5 +1,8 @@
 import cv2
-import neural_renderer as nr
+try:
+    import neural_renderer as nr
+except ImportError:
+    nr = None
 import numpy as np
 import torch
 
@@ -33,6 +36,9 @@ class MeshRenderer(object):
                        'light_yellow': np.array([213., 216., 165.]) / 255,
                        }
         self.camera_f, self.camera_c, self.mesh_pos = camera_f, camera_c, mesh_pos
+        if nr is None:
+            self.renderer = None
+            return
         self.renderer = nr.Renderer(camera_mode='projection',
                                     light_intensity_directional=.8,
                                     light_intensity_ambient=.3,
@@ -86,8 +92,8 @@ class MeshRenderer(object):
         vertices_2d = cv2.projectPoints(np.expand_dims(vertices, -1),
                                         rvec, tvec, camera_k, camera_dist_coeffs)[0]
         vertices_2d = np.reshape(vertices_2d, (-1, 2))
-        alpha = np.zeros((height, width, 3), np.float)
-        whiteboard = np.ones((3, height, width), np.float)
+        alpha = np.zeros((height, width, 3), np.float32)
+        whiteboard = np.ones((3, height, width), np.float32)
         if np.isnan(vertices_2d).any():
             return whiteboard, alpha
         for x, y in vertices_2d:

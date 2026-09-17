@@ -174,3 +174,8 @@ temp/
 # Local project-only folders
 .venv-p2m/
 Pixel2Mesh_reference/
+
+# Pixel2Mesh ellipsoid topology assets
+!Pixel2Mesh/datasets/data/ellipsoid/face1.obj
+!Pixel2Mesh/datasets/data/ellipsoid/face2.obj
+!Pixel2Mesh/datasets/data/ellipsoid/face3.obj
