@@ -171,3 +171,6 @@ tmp/
 temp/
 *.bak
 *.old
+# Local project-only folders
+.venv-p2m/
+Pixel2Mesh_reference/
