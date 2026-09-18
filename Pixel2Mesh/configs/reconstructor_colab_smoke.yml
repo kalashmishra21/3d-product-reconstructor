@@ -1,0 +1,41 @@
+num_gpus: 1
+num_workers: 2
+pin_memory: true
+
+dataset:
+  name: reconstructor
+  root: /content/reconstructor_dataset
+  subset_train: train
+  subset_eval: test
+
+model:
+  name: pixel2mesh
+  hidden_dim: 192
+  last_hidden_dim: 192
+  coord_dim: 3
+  backbone: vgg16
+  gconv_activation: true
+  z_threshold: 0
+  align_with_tensorflow: false
+
+train:
+  num_epochs: 1
+  batch_size: 1
+  summary_steps: 100
+  checkpoint_steps: 5000
+  test_epochs: 999
+  use_augmentation: true
+  shuffle: true
+
+test:
+  batch_size: 1
+  shuffle: false
+
+optim:
+  name: adam
+  adam_beta1: 0.9
+  lr: 5.0e-5
+  wd: 1.0e-6
+  lr_step: [30, 45]
+  lr_factor: 0.1
+
