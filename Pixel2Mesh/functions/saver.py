@@ -26,7 +26,7 @@ class CheckpointSaver(object):
             return None
         self.logger.info("Loading checkpoint file: %s" % self.checkpoint_file)
         try:
-            return torch.load(self.checkpoint_file)
+            return torch.load(self.checkpoint_file, map_location='cpu', weights_only=False)
         except UnicodeDecodeError:
             # to be compatible with old encoding methods
             return torch.load(self.checkpoint_file, encoding="bytes")

@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from PIL import Image
+from skimage import io, transform
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import default_collate
 from torchvision.transforms import Normalize
@@ -77,15 +78,28 @@ class ReconstructorTrainingDataset(Dataset):
         points = data[:, :3].astype(np.float32) - self.mesh_pos
         normals = data[:, 3:6].astype(np.float32)
 
-        image = Image.open(image_path).convert("RGB")
-        image = image.resize(
+        # Match the reference Pixel2Mesh preprocessing:
+        # 1. Read RGBA image
+        # 2. Replace fully transparent pixels with white
+        # 3. Resize to 224x224 with skimage
+        # 4. Keep RGB channels only
+
+        image = io.imread(str(image_path))
+
+        if image.ndim == 3 and image.shape[2] > 3:
+            image[image[:, :, 3] == 0] = 255
+
+        image = transform.resize(
+            image,
             (config.IMG_SIZE, config.IMG_SIZE),
-            Image.Resampling.BILINEAR
+            mode="constant",
+            anti_aliasing=False
         )
 
-        image_np = np.asarray(image, dtype=np.float32) / 255.0
+        image = image[:, :, :3].astype(np.float32)
+
         image_tensor = torch.from_numpy(
-            np.transpose(image_np, (2, 0, 1))
+            np.transpose(image, (2, 0, 1))
         )
 
         images = (
