@@ -27,6 +27,7 @@ class ReconstructorTrainingDataset(Dataset):
         self.split_root = self.file_root / split
         self.normalization = normalization
         self.mesh_pos = np.asarray(mesh_pos, dtype=np.float32)
+
         self.image_normalize = Normalize(
             mean=config.IMG_NORM_MEAN,
             std=config.IMG_NORM_STD
@@ -35,19 +36,35 @@ class ReconstructorTrainingDataset(Dataset):
         list_file = self.file_root / f"{split}_list.txt"
 
         if not self.split_root.exists():
-            raise FileNotFoundError(f"Dataset split not found: {self.split_root}")
+            raise FileNotFoundError(
+                f"Dataset split not found: {self.split_root}"
+            )
 
         if not list_file.exists():
-            raise FileNotFoundError(f"List file not found: {list_file}")
+            raise FileNotFoundError(
+                f"List file not found: {list_file}"
+            )
 
         with list_file.open("r", encoding="utf-8") as fp:
-            self.file_names = [line.strip() for line in fp if line.strip()]
+            self.file_names = [
+                line.strip()
+                for line in fp
+                if line.strip()
+            ]
 
         if not self.file_names:
-            raise RuntimeError(f"No samples found in {list_file}")
+            raise RuntimeError(
+                f"No samples found in {list_file}"
+            )
 
-        categories = sorted({Path(name).parts[2] for name in self.file_names})
-        self.labels_map = {name: idx for idx, name in enumerate(categories)}
+        categories = sorted(
+            {Path(name).parts[2] for name in self.file_names}
+        )
+
+        self.labels_map = {
+            name: idx
+            for idx, name in enumerate(categories)
+        }
 
         print(f"[Reconstructor] Split   : {split}")
         print(f"[Reconstructor] Samples : {len(self.file_names)}")
@@ -63,19 +80,33 @@ class ReconstructorTrainingDataset(Dataset):
         image_path = dat_path.with_suffix(".png")
 
         if not dat_path.exists():
-            raise FileNotFoundError(f".dat not found: {dat_path}")
+            raise FileNotFoundError(
+                f".dat not found: {dat_path}"
+            )
+
         if not image_path.exists():
-            raise FileNotFoundError(f".png not found: {image_path}")
+            raise FileNotFoundError(
+                f".png not found: {image_path}"
+            )
 
         with dat_path.open("rb") as fp:
             data = pickle.load(fp, encoding="latin1")
 
         if not isinstance(data, np.ndarray):
-            raise TypeError(f"Expected numpy.ndarray, got {type(data)}")
-        if data.ndim != 2 or data.shape[1] != 6:
-            raise ValueError(f"Expected Nx6 .dat array, got {data.shape}")
+            raise TypeError(
+                f"Expected numpy.ndarray, got {type(data)}"
+            )
 
-        points = data[:, :3].astype(np.float32) - self.mesh_pos
+        if data.ndim != 2 or data.shape[1] != 6:
+            raise ValueError(
+                f"Expected Nx6 .dat array, got {data.shape}"
+            )
+
+        points = (
+            data[:, :3].astype(np.float32)
+            - self.mesh_pos
+        )
+
         normals = data[:, 3:6].astype(np.float32)
 
         # Match the reference Pixel2Mesh preprocessing:
@@ -125,7 +156,10 @@ class ReconstructorTrainingDataset(Dataset):
 def get_reconstructor_collate(num_points):
     def collate(batch):
         if len(batch) > 1:
-            lengths = [item["length"] for item in batch]
+            lengths = [
+                item["length"]
+                for item in batch
+            ]
 
             if len(set(lengths)) > 1:
                 points_orig = []
@@ -144,25 +178,157 @@ def get_reconstructor_collate(num_points):
                     item["points"] = torch.from_numpy(
                         points[choices].astype(np.float32)
                     )
+
                     item["normals"] = torch.from_numpy(
                         normals[choices].astype(np.float32)
                     )
 
                     points_orig.append(
-                        torch.from_numpy(points.astype(np.float32))
+                        torch.from_numpy(
+                            points.astype(np.float32)
+                        )
                     )
+
                     normals_orig.append(
-                        torch.from_numpy(normals.astype(np.float32))
+                        torch.from_numpy(
+                            normals.astype(np.float32)
+                        )
                     )
 
                 ret = default_collate(batch)
+
                 ret["points_orig"] = points_orig
                 ret["normals_orig"] = normals_orig
+
                 return ret
 
         ret = default_collate(batch)
+
         ret["points_orig"] = ret["points"]
         ret["normals_orig"] = ret["normals"]
+
         return ret
 
     return collate
+
+
+class ReconstructorDemoDataset(Dataset):
+    """
+    Dataset for inference on arbitrary uploaded images.
+
+    Uses the same image preprocessing as the training dataset:
+    1. Read image
+    2. Replace fully transparent pixels with white
+    3. Resize to config.IMG_SIZE x config.IMG_SIZE
+       using constant border and anti_aliasing=False
+    4. Keep RGB channels
+    5. Apply ImageNet normalization when enabled
+    """
+
+    def __init__(self, folder, normalization, shapenet_options):
+        self.folder = Path(folder)
+        self.normalization = normalization
+
+        self.image_normalize = Normalize(
+            mean=config.IMG_NORM_MEAN,
+            std=config.IMG_NORM_STD
+        )
+
+        if not self.folder.exists():
+            raise FileNotFoundError(
+                f"Prediction folder not found: {self.folder}"
+            )
+
+        if not self.folder.is_dir():
+            raise NotADirectoryError(
+                f"Prediction path is not a directory: {self.folder}"
+            )
+
+        self.file_list = []
+
+        valid_extensions = {
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".bmp",
+            ".webp"
+        }
+
+        for file_path in sorted(self.folder.iterdir()):
+            if not file_path.is_file():
+                continue
+
+            if file_path.suffix.lower() not in valid_extensions:
+                continue
+
+            try:
+                with Image.open(file_path) as image:
+                    image.verify()
+
+                self.file_list.append(file_path)
+
+            except (OSError, ValueError):
+                print(
+                    f"=> Ignoring {file_path} "
+                    f"because it's not a valid image"
+                )
+
+        if not self.file_list:
+            raise RuntimeError(
+                f"No valid images found in {self.folder}"
+            )
+
+        print(
+            f"[ReconstructorDemo] Images : {len(self.file_list)}"
+        )
+        print(
+            f"[ReconstructorDemo] Folder : {self.folder}"
+        )
+
+    def __len__(self):
+        return len(self.file_list)
+
+    def __getitem__(self, index):
+        image_path = self.file_list[index]
+
+        image = io.imread(str(image_path))
+
+        # Grayscale -> RGB
+        if image.ndim == 2:
+            image = np.stack(
+                [image, image, image],
+                axis=-1
+            )
+
+        # RGBA -> replace fully transparent pixels with white
+        if image.ndim == 3 and image.shape[2] > 3:
+            image[image[:, :, 3] == 0] = 255
+
+        # IMPORTANT:
+        # Keep preprocessing aligned with training:
+        # constant border + anti_aliasing=False.
+        image = transform.resize(
+            image,
+            (config.IMG_SIZE, config.IMG_SIZE),
+            mode="constant",
+            anti_aliasing=False
+        )
+
+        # Keep RGB only
+        image = image[:, :, :3].astype(np.float32)
+
+        image_tensor = torch.from_numpy(
+            np.transpose(image, (2, 0, 1))
+        )
+
+        images = (
+            self.image_normalize(image_tensor)
+            if self.normalization
+            else image_tensor
+        )
+
+        return {
+            "images": images,
+            "images_orig": image_tensor,
+            "filepath": str(image_path)
+        }

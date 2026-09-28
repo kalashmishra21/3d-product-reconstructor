@@ -4,7 +4,7 @@ pin_memory: true
 
 dataset:
   name: reconstructor
-  root: /content/reconstructor_dataset
+  root: /content/reconstructor_dataset/reconstructor_dataset
   subset_train: train
   subset_eval: test
 
@@ -14,12 +14,12 @@ model:
   last_hidden_dim: 192
   coord_dim: 3
   backbone: vgg16
-  gconv_activation: true
+  gconv_activation: false
   z_threshold: 0
   align_with_tensorflow: false
 
 train:
-  num_epochs: 1
+  num_epochs: 10
   batch_size: 1
   summary_steps: 100
   checkpoint_steps: 5000
@@ -30,12 +30,12 @@ train:
 test:
   batch_size: 1
   shuffle: false
+  weighted_mean: false
 
 optim:
   name: adam
   adam_beta1: 0.9
-  lr: 5.0e-5
+  lr: 1.0e-5
   wd: 1.0e-6
   lr_step: [30, 45]
   lr_factor: 0.1
-
