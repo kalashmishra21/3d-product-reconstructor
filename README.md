@@ -10,11 +10,16 @@ Pixel2Mesh progressively deforms an ellipsoid into a mesh. The planned applicati
 
 ## Current status
 
-- **Complete:** Trained Pixel2Mesh source baseline and local final checkpoint.
-- **Working:** Stage 1 FastAPI foundation with `GET /api/v1/health`; its health test passes.
-- **Upcoming:** React frontend, Supabase Google sign-in and PostgreSQL history, image upload and inference API, OBJ-to-GLB conversion, and interactive result viewer.
+- **Working:** Trained Pixel2Mesh baseline, tested FastAPI health endpoint, interactive React landing page, and Supabase Auth frontend foundation. Google OAuth setup is pending.
+- **Upcoming:** Backend token verification, PostgreSQL history, image upload and inference API, OBJ-to-GLB conversion, and interactive result viewer.
 
 The health endpoint checks only that the API is serving requests. It does not load the model or confirm inference readiness.
+
+## Preview
+
+| Landing | Login |
+| --- | --- |
+| ![Interactive landing page](assets/readme/landing.png) | ![Authentication page](assets/readme/login.png) |
 
 ## Tech stack
 
@@ -22,8 +27,8 @@ The health endpoint checks only that the API is serving requests. It does not lo
 | --- | --- |
 | Model | Python, PyTorch, Pixel2Mesh |
 | API | FastAPI |
-| Planned frontend | React, TypeScript, React Three Fiber / Three.js |
-| Planned auth and database | Supabase Auth and PostgreSQL |
+| Frontend | React, JavaScript/JSX, Tailwind CSS, Axios, three.js (with React Three Fiber / Drei) |
+| Auth foundation / planned database | Supabase Auth and PostgreSQL |
 | Mesh files | Stage-3 OBJ; GLB for browser viewing when appropriate |
 
 ## Repository structure
@@ -32,8 +37,8 @@ The health endpoint checks only that the API is serving requests. It does not lo
 backend/        FastAPI foundation and tests
 Pixel2Mesh/     Trained model implementation and inference support
 dataset_tools/  Dataset and research utilities
-docs/           Development baseline, plan, and project PRD
-frontend/       Planned React application; not created yet
+docs/           Project PRD and reference material
+frontend/       React landing page, 3D illustration, and tests
 ```
 
 The repository root is the application root. Pixel2Mesh is one protected component within it.
@@ -51,6 +56,8 @@ backend/.venv/Scripts/python.exe -m uvicorn app.main:app --app-dir backend --rel
 
 The server runs at `http://127.0.0.1:8000`. Use a separate backend environment; do not replace the existing Pixel2Mesh environment.
 
+For frontend setup, see [frontend/README.md](frontend/README.md).
+
 ## Current API
 
 | Method | Path | Response |
@@ -63,10 +70,10 @@ Training is complete. The final checkpoint is stored locally at `Pixel2Mesh/chec
 
 ## Development roadmap
 
-Build an early interactive landing page, then authentication and a protected dashboard. Add validated upload, real inference, the result viewer, and history as connected feature slices. Refine the landing interaction after the functional flow works. See [the development plan](docs/development-plan.md) for stage boundaries.
+Finish auth configuration and backend token verification, then add validated upload, real inference, the result viewer, and history as connected feature slices. Refine the landing interaction after the functional flow works.
 
 ## Limitations
 
 Full local CPU end-to-end reconstruction has not been verified; the existing predictor rejects CPU inference. Results from a single image are inherently uncertain for hidden surfaces, and performance on real product photos may differ from the training data. No reconstruction accuracy value is claimed here.
 
-See the [development baseline](docs/development-baseline.md) and [project PRD](docs/PRD/3D_Object_Reconstruction_PRD.pdf) for more context.
+See the [project PRD](docs/PRD/3D_Object_Reconstruction_PRD.pdf) for more context.
