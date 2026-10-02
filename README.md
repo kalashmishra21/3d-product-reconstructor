@@ -10,16 +10,16 @@ Pixel2Mesh progressively deforms an ellipsoid into a mesh. The planned applicati
 
 ## Current status
 
-- **Working:** Trained Pixel2Mesh baseline, tested FastAPI health endpoint, interactive React landing page, and Supabase Auth frontend foundation. Google OAuth setup is pending.
-- **Upcoming:** Backend token verification, PostgreSQL history, image upload and inference API, OBJ-to-GLB conversion, and interactive result viewer.
+- **Working:** Trained Pixel2Mesh baseline, FastAPI health API, interactive React/Three.js landing page, Supabase email/password authentication, protected dashboard, and persistent browser sessions.
+- **Pending:** Google OAuth provider configuration, backend JWT verification, image upload, Pixel2Mesh inference integration, interactive result viewer, and reconstruction history.
 
 The health endpoint checks only that the API is serving requests. It does not load the model or confirm inference readiness.
 
 ## Preview
 
-| Landing | Login |
-| --- | --- |
-| ![Interactive landing page](assets/readme/landing.png) | ![Authentication page](assets/readme/login.png) |
+| Landing | Login | Dashboard |
+| --- | --- | --- |
+| ![Interactive landing page](assets/readme/landing.png) | ![Authentication page](assets/readme/login.png) | ![Authenticated dashboard](assets/readme/dashboard.png) |
 
 ## Tech stack
 
@@ -38,7 +38,7 @@ backend/        FastAPI foundation and tests
 Pixel2Mesh/     Trained model implementation and inference support
 dataset_tools/  Dataset and research utilities
 docs/           Project PRD and reference material
-frontend/       React landing page, 3D illustration, and tests
+frontend/       React landing, authentication, dashboard, and tests
 ```
 
 The repository root is the application root. Pixel2Mesh is one protected component within it.
@@ -70,7 +70,7 @@ Training is complete. The final checkpoint is stored locally at `Pixel2Mesh/chec
 
 ## Development roadmap
 
-Finish auth configuration and backend token verification, then add validated upload, real inference, the result viewer, and history as connected feature slices. Refine the landing interaction after the functional flow works.
+Configure Google OAuth and add backend token verification, then build validated upload, real inference, the result viewer, and history as connected feature slices.
 
 ## Limitations
 

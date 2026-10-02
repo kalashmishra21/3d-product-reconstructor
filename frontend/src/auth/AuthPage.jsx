@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Arrow } from '../components/Icons'
 import { signInWithEmail, signInWithGoogle, signUpWithEmail, sendPasswordReset, updatePassword } from '../lib/auth'
+import { authErrorMessage } from '../lib/authError'
 import { validateAuthForm } from '../lib/authValidation'
 import { useAuth } from './AuthProvider'
 
@@ -79,8 +80,10 @@ export function AuthPage({ mode }) {
         if (data.session) {
           if (!await refreshUser()) throw new Error('Your session could not be verified. Please sign in.')
           navigate('/dashboard', { replace: true })
-        } else {
+        } else if (data.user) {
           setMessage({ text: 'Check your email for a confirmation link. Follow it to finish setting up your account.' })
+        } else {
+          throw new Error('Account creation could not be verified. Please try again.')
         }
       } else if (mode === 'forgot') {
         await sendPasswordReset(values.email.trim())
@@ -90,7 +93,7 @@ export function AuthPage({ mode }) {
         navigate('/dashboard', { replace: true })
       }
     } catch (error) {
-      setMessage({ error: true, text: error.message || 'The request could not be completed. Please try again.' })
+      setMessage({ error: true, text: authErrorMessage(error, mode) })
     } finally {
       setPending('')
     }
