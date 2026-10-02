@@ -10,7 +10,7 @@ function ProtectedDashboard() {
   if (!configured) return <Navigate to="/login" replace />
   if (!ready) return <AuthShell mode="callback"><section className="auth-panel auth-status-panel" role="status">Checking your session…</section></AuthShell>
   if (!user) return <Navigate to="/login" replace state={{ from: { pathname: '/dashboard' } }} />
-  return <AuthShell mode="login" wide><DashboardShell /></AuthShell>
+  return <DashboardShell />
 }
 
 function AuthContent() {
