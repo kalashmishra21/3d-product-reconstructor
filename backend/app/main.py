@@ -3,9 +3,11 @@
 from fastapi import Depends, FastAPI
 
 from app.auth import verified_user
+from app.preflight import router as preflight_router
 
 
 app = FastAPI(title="3D Reconstruction API")
+app.include_router(preflight_router)
 
 
 @app.get("/api/v1/health")

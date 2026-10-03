@@ -1,0 +1,111 @@
+@reference "../styles/global.css";
+
+@layer components {
+  .recon-page { @apply min-h-svh overflow-x-hidden bg-[#191e19] text-ivory; background-image: linear-gradient(#27312636 1px, transparent 1px), linear-gradient(90deg, #27312636 1px, transparent 1px); background-size: 80px 80px; }
+  .recon-topbar { @apply mx-auto flex min-h-20 max-w-370 items-center justify-between gap-5 border-b border-[#46513f] px-5 sm:px-8 lg:px-12; }
+  .recon-brand { @apply inline-flex items-center gap-2.5 text-xl font-medium tracking-[-.06em] text-ivory; }
+  .recon-brand svg { @apply h-6 w-5 text-olive; }
+  .recon-brand > span { @apply -ml-2.5 text-olive; }
+  .recon-topbar-center { @apply hidden font-mono text-[9px] tracking-[.18em] text-[#aab49d] lg:block; }
+  .recon-topbar-center span { @apply px-2 text-olive; }
+  .recon-topbar-end { @apply flex items-center gap-5; }
+  .recon-back { @apply inline-flex min-h-11 items-center gap-2 border-b border-[#647456] text-[11px] font-medium text-ivory transition-colors hover:border-olive hover:text-olive; }
+  .recon-back svg { @apply size-4; }
+  .recon-main { @apply mx-auto max-w-370 px-5 sm:px-8 lg:px-12; }
+  .recon-heading { @apply flex items-end justify-between gap-6 pt-11 pb-10 sm:pt-15 lg:pt-19 lg:pb-13; }
+  .recon-eyebrow { @apply font-mono text-[9px] font-medium tracking-[.2em] text-[#b6c49e]; }
+  .recon-eyebrow > span { @apply mr-2 inline-block size-1.5 bg-olive; }
+  .recon-heading h1 { @apply mt-5 max-w-230 text-[clamp(42px,5.5vw,82px)] leading-[1.04] tracking-[-.062em]; }
+  .recon-heading h1 em { @apply text-olive; }
+  .recon-intro { @apply mt-5 max-w-130 text-[13px] leading-[1.8] text-[#b7bfb0] sm:text-[15px]; }
+  .recon-heading-index { @apply hidden min-w-26 flex-col items-end gap-1 border-l border-[#68765b] pl-4 font-mono text-olive lg:flex; }
+  .recon-heading-index > span { @apply text-lg; }
+  .recon-heading-index small { @apply text-[8px] tracking-widest text-[#aab59c]; }
+  .recon-workspace { @apply grid min-w-0 gap-px overflow-hidden rounded-sm border border-[#526049] bg-[#526049] lg:grid-cols-[minmax(360px,.82fr)_minmax(0,1.18fr)]; box-shadow: 0 28px 90px #09100960; }
+  .recon-control-panel { @apply min-w-0 bg-[#202820] px-5 py-6 sm:px-8 sm:py-8 lg:px-8 xl:px-10; }
+  .recon-panel-heading { @apply flex items-start gap-4; }
+  .recon-panel-number { @apply mt-0.5 font-mono text-[11px] text-olive; }
+  .recon-panel-heading h2 { @apply mt-2 text-[clamp(25px,2.4vw,38px)] leading-tight tracking-[-.045em]; }
+  .recon-panel-intro { @apply mt-4 max-w-105 text-[12px] leading-[1.8] text-[#b6c0ae]; }
+  .recon-drop { @apply relative mt-8 flex min-h-62 flex-col items-center justify-center border border-dashed border-[#77876b] bg-[#273126a3] px-5 py-7 text-center transition-colors sm:min-h-66; }
+  .recon-drop::before, .recon-drop::after { content: ''; @apply pointer-events-none absolute size-2.5 border-olive; }
+  .recon-drop::before { @apply top-0 left-0 border-t border-l; }
+  .recon-drop::after { @apply right-0 bottom-0 border-r border-b; }
+  .recon-drop.is-dragging { @apply border-solid border-olive bg-[#364534]; }
+  .recon-drop-symbol { @apply relative mb-5 grid size-12 place-items-center rounded-full border border-[#6e8164] text-olive; }
+  .recon-drop-symbol svg { @apply size-5; }
+  .recon-drop-symbol span { @apply absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-full bg-olive text-xs text-[#1e261d]; }
+  .recon-drop-title { @apply text-[17px] tracking-[-.025em]; }
+  .recon-drop-copy { @apply mt-2 max-w-65 text-[11px] leading-relaxed text-[#b7c2af]; }
+  .recon-browse { @apply mt-5 inline-flex min-h-11 items-center gap-3 border-b border-olive bg-transparent px-1 text-[11px] font-semibold text-olive transition-colors hover:text-ivory; }
+  .recon-browse svg { @apply size-3.5; }
+  .recon-drop-limit { @apply mt-5 font-mono text-[9px] tracking-[.12em] text-[#abb9a0]; }
+  .recon-drop-limit span { @apply mx-1 text-olive; }
+  .recon-inline-state, .recon-inline-error { @apply mt-4 text-xs leading-relaxed; }
+  .recon-inline-state { @apply text-olive; }
+  .recon-inline-error { @apply border-l-2 border-warning bg-[#48382f6b] px-3 py-2 text-[#f1cdb4]; }
+  .recon-selection { @apply mt-5 border-t border-[#52614e] pt-4; }
+  .recon-selection-head { @apply flex items-center justify-between gap-3 font-mono text-[9px] tracking-[.12em] text-olive; }
+  .recon-selection-head button { @apply min-h-11 border-b border-[#9aa88b] bg-transparent text-[10px] normal-case tracking-normal text-ivory hover:text-olive; }
+  .recon-selection > strong { @apply mt-2 block truncate text-[13px] font-medium; }
+  .recon-selection dl { @apply mt-5 grid grid-cols-3 gap-2; }
+  .recon-selection dl div { @apply min-w-0 border-l border-[#5d6d55] pl-3; }
+  .recon-selection dt { @apply font-mono text-[9px] text-[#abb7a1]; }
+  .recon-selection dd { @apply mt-1 break-words text-[11px] font-medium text-ivory; }
+  .recon-submit { @apply mt-7 flex min-h-13 w-full items-center justify-between gap-4 bg-olive px-5 text-left text-[11px] font-bold tracking-[.1em] text-[#1d261a] transition-colors enabled:hover:bg-[#e5edc4] disabled:cursor-not-allowed disabled:bg-[#67735a] disabled:text-[#e1e7d2]; }
+  .recon-submit svg { @apply size-4; }
+  .recon-submit-note { @apply mt-3 text-[10px] leading-relaxed text-[#aeb8a6]; }
+  .recon-ready { @apply mt-6 border border-[#8da575] bg-[#344230] px-5 py-4; }
+  .recon-ready p { @apply flex items-center gap-2 font-mono text-[9px] tracking-[.14em] text-olive; }
+  .recon-ready-dot { @apply size-1.5 rounded-full bg-olive; }
+  .recon-ready strong { @apply mt-3 block text-lg font-normal tracking-tight; }
+  .recon-ready > span { @apply mt-2 flex items-center gap-2 font-mono text-[10px] text-[#e0e8d3]; }
+  .recon-ready i { @apply size-0.75 rounded-full bg-[#a9b89b]; }
+  .recon-ready small { @apply mt-3 block text-[10px] text-[#b4c1ab]; }
+  .recon-view-panel { @apply relative flex min-w-0 flex-col bg-[#222c21]; }
+  .recon-view-header { @apply flex items-start justify-between gap-4 px-5 pt-6 sm:px-7 sm:pt-8; }
+  .recon-view-header h2 { @apply mt-2 text-[23px] tracking-[-.04em] sm:text-[29px]; }
+  .recon-live-label { @apply shrink-0 border border-[#788c6b] px-2 py-1.5 font-mono text-[8px] tracking-[.1em] text-olive; }
+  .recon-viewport { @apply relative min-h-75 flex-1 overflow-hidden sm:min-h-90 lg:min-h-120; background: radial-gradient(ellipse at 51% 42%, #3a4a35 0%, #29372a 46%, #202a21 82%); }
+  .recon-viewport::before { content: ''; @apply pointer-events-none absolute inset-0 z-1 opacity-30; background-image: linear-gradient(90deg, #768b651f 1px, transparent 1px), linear-gradient(#768b651f 1px, transparent 1px); background-size: 40px 40px; }
+  .recon-viewport-hud, .recon-viewport-bottom { @apply pointer-events-none absolute right-5 left-5 z-2 flex justify-between gap-3 font-mono text-[8px] tracking-[.14em] text-[#c3d1b6] sm:right-7 sm:left-7; }
+  .recon-viewport-hud { @apply top-5; }
+  .recon-viewport-bottom { @apply bottom-5; }
+  .recon-scene { @apply absolute inset-0; }
+  .recon-scene canvas { @apply block; }
+  .recon-static-stage { @apply grid size-full place-items-center p-12; }
+  .recon-static-stage svg { @apply size-full max-h-64 max-w-64 text-[#cad9ae]; }
+  .recon-static-stage img { @apply max-h-[85%] max-w-[85%] object-contain; box-shadow: 12px 14px 0 #0e1a116b; }
+  .recon-axis { @apply pointer-events-none absolute right-7 bottom-14 z-2 size-9 border-r border-b border-[#9db38b] font-mono text-[9px] text-[#d6e5c9]; }
+  .recon-axis span:first-child { @apply absolute -top-3 -right-1; }
+  .recon-axis span:last-child { @apply absolute -right-3 -bottom-1; }
+  .recon-view-foot { @apply flex flex-wrap justify-between gap-2 border-t border-[#54634b] px-5 py-4 font-mono text-[8px] tracking-[.1em] text-[#bdcdb2] sm:px-7; }
+  .recon-pipeline { @apply mt-8 border-t border-[#596750] pt-6; }
+  .recon-pipeline ol { @apply mt-5 grid list-none grid-cols-2 gap-px bg-[#485645] p-0 md:grid-cols-4; }
+  .recon-pipeline li { @apply flex min-w-0 flex-col gap-2 bg-[#202820] px-4 py-5 sm:px-6; }
+  .recon-pipeline li > span { @apply font-mono text-[9px] text-[#a5b29a]; }
+  .recon-pipeline li strong { @apply text-[13px] font-medium tracking-[.12em]; }
+  .recon-pipeline li small { @apply font-mono text-[8px] tracking-[.12em] text-[#adb9a6]; }
+  .recon-pipeline li.is-complete { @apply border-t-2 border-olive bg-[#31402e]; }
+  .recon-pipeline li.is-complete strong, .recon-pipeline li.is-complete small { @apply text-olive; }
+  .recon-pipeline li.is-current { @apply border-t-2 border-[#a2b896]; }
+  .recon-pipeline li.is-future { @apply opacity-55; }
+  .recon-footer { @apply mt-11 flex flex-wrap justify-between gap-3 border-t border-[#495545] py-6 font-mono text-[9px] tracking-[.1em] text-[#aab8a1]; }
+}
+
+@media (max-width: 639px) {
+  .recon-topbar { min-height: 68px; }
+  .recon-topbar .backend-status { display: none; }
+  .recon-heading { padding-top: 38px; }
+  .recon-workspace { display: flex; flex-direction: column; }
+  .recon-control-panel { order: 1; }
+  .recon-view-panel { order: 2; }
+  .recon-view-header { align-items: center; }
+  .recon-view-header h2 { font-size: 21px; }
+  .recon-live-label { font-size: 7px; }
+  .recon-viewport { min-height: 300px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recon-page *, .recon-page *::before, .recon-page *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

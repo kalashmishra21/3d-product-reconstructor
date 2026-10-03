@@ -102,7 +102,7 @@ export function Dashboard({ user, health, pending, error, onLogout }) {
           <h2 id="command-title">Make room for<br /><em>another dimension.</em></h2>
           <p>Your next object starts with an image. Explore the path from pixels to a mesh you can turn, inspect, and understand.</p>
           <Link className="button primary" to="/reconstruct">New Reconstruction <Arrow diagonal /></Link>
-          <span className="dash-coming-note">Image upload is coming next.</span>
+          <span className="dash-coming-note">Image preflight is ready. Mesh generation comes next.</span>
           <div className="dash-process" aria-label="Planned reconstruction pipeline"><span><Icon name="image" />Image</span><Arrow /><span><Icon name="model" />Mesh</span><Arrow /><span>3D result</span></div>
         </div>
         <TopologyStudy />
