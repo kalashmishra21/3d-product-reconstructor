@@ -37,7 +37,7 @@ export default function App() {
       <Route path="/reset-password" element={<AuthRoute />} />
       <Route path="/auth/callback" element={<AuthRoute />} />
       <Route path="/dashboard" element={<AuthRoute />} />
-      <Route path="/reconstruct" element={<PublicArea />} />
+      <Route path="/reconstruct" element={<AuthRoute />} />
       <Route path="/result/:id" element={<PublicArea />} />
       <Route path="*" element={<PublicArea />} />
     </Routes>

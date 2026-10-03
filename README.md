@@ -1,79 +1,73 @@
 # 3D Object Reconstruction from Images
 
-A college project that uses a trained Pixel2Mesh model to reconstruct a 3D mesh from one RGB image. The machine-learning work is complete; the web application is being built in small, testable stages.
+A single-image 3D reconstruction college project built around a completed Pixel2Mesh model. The web app currently takes an authenticated user from an image to a verified input; mesh generation is the next integration stage.
 
-## Intended pipeline
+## Current application flow
 
-`RGB image -> Pixel2Mesh -> final Stage-3 mesh -> OBJ (and GLB when appropriate) -> FastAPI -> React 3D viewer`
+`Email or Google sign-in → protected dashboard → New Reconstruction → image validation → authenticated FastAPI preflight → INPUT VERIFIED`
 
-Pixel2Mesh progressively deforms an ellipsoid into a mesh. The planned application will let a user upload an image, inspect and download the result, and view reconstruction history. This end-to-end application flow is not implemented yet.
-
-## Current status
-
-- **Working:** Trained Pixel2Mesh baseline, FastAPI health API, interactive React/Three.js landing page, Supabase email/password authentication, protected dashboard, and persistent browser sessions.
-- **Pending:** Google OAuth provider configuration, backend JWT verification, image upload, Pixel2Mesh inference integration, interactive result viewer, and reconstruction history.
-
-The health endpoint checks only that the API is serving requests. It does not load the model or confirm inference readiness.
+The workspace accepts one JPEG, PNG, or WebP image (up to 10 MB), shows its metadata and an interactive **input preview**, and checks the image again on the server. The preview is **not** reconstructed geometry. Pixel2Mesh inference, OBJ/GLB output, a result viewer, and history are still being built.
 
 ## Preview
 
-| Landing | Login | Dashboard |
-| --- | --- | --- |
-| ![Interactive landing page](assets/readme/landing.png) | ![Authentication page](assets/readme/login.png) | ![Authenticated dashboard](assets/readme/dashboard.png) |
+| Landing | Authentication |
+| --- | --- |
+| ![Interactive landing page](assets/readme/landing.png) | ![Login page](assets/readme/login.png) |
 
-## Tech stack
+| Dashboard | New Reconstruction |
+| --- | --- |
+| ![Protected dashboard](assets/readme/dashboard.png) | ![3D image input and preflight workspace](assets/readme/reconstruction.png) |
+
+## What works
+
+- Trained Pixel2Mesh model with Stage 3 as its final mesh output.
+- React/Three.js landing page, Supabase email/password and Google OAuth, persistent sessions, and a protected dashboard.
+- Premium 3D input workspace with click/drag-and-drop selection, replace/clear, preview, and frontend validation.
+- FastAPI health API, verified Supabase JWT identity, and authenticated server-side image preflight.
+
+## Stack and layout
 
 | Area | Technology |
 | --- | --- |
 | Model | Python, PyTorch, Pixel2Mesh |
-| API | FastAPI |
-| Frontend | React, JavaScript/JSX, Tailwind CSS, Axios, three.js (with React Three Fiber / Drei) |
-| Auth foundation / planned database | Supabase Auth and PostgreSQL |
-| Mesh files | Stage-3 OBJ; GLB for browser viewing when appropriate |
+| Backend | FastAPI; Supabase JWT verification; Pillow image checks |
+| Frontend | React, JavaScript/JSX, Vite, Tailwind CSS, Axios, three.js with React Three Fiber/Drei |
+| Auth / planned history | Supabase Auth / PostgreSQL |
+| Planned result files | Stage-3 OBJ and browser-friendly GLB |
 
-## Repository structure
+`backend/` holds the API and tests; `frontend/` holds the web app; `Pixel2Mesh/` is the protected trained ML component; `dataset_tools/` contains research utilities; `docs/` contains project documentation.
 
-```text
-backend/        FastAPI foundation and tests
-Pixel2Mesh/     Trained model implementation and inference support
-dataset_tools/  Dataset and research utilities
-docs/           Project PRD and reference material
-frontend/       React landing, authentication, dashboard, and tests
-```
+## Run locally
 
-The repository root is the application root. Pixel2Mesh is one protected component within it.
-
-## Backend quick start
-
-From the repository root in PowerShell, with Python 3.11 or newer:
+From the repository root in PowerShell with Python 3.11+:
 
 ```powershell
 python -m venv backend/.venv
 backend/.venv/Scripts/python.exe -m pip install -e "./backend[dev]"
-backend/.venv/Scripts/python.exe -m pytest -c backend/pyproject.toml backend/tests
+$env:SUPABASE_URL = "<your Supabase project URL>"
 backend/.venv/Scripts/python.exe -m uvicorn app.main:app --app-dir backend --reload
 ```
 
-The server runs at `http://127.0.0.1:8000`. Use a separate backend environment; do not replace the existing Pixel2Mesh environment.
+In another terminal, run `npm.cmd ci` and `npm.cmd run dev` from `frontend/`, then open `http://127.0.0.1:5173`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in ignored `frontend/.env.local` for authentication; use only a publishable key. See [frontend setup](frontend/README.md) for details.
 
-For frontend setup, see [frontend/README.md](frontend/README.md).
-
-## Current API
-
-| Method | Path | Response |
+| Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/v1/health` | `{"status":"ok","service":"3d-reconstruction-api"}` |
+| `GET` | `/api/v1/health` | Public API availability |
+| `GET` | `/api/v1/me` | Identity from a verified Supabase access token |
+| `POST` | `/api/v1/reconstructions/preflight` | Authenticated image validation and metadata; no inference or storage |
 
-## ML and checkpoint
+## Model baseline
 
-Training is complete. The final checkpoint is stored locally at `Pixel2Mesh/checkpoints/260000_000010.pt` and is intentionally Git-ignored. Do not upload it to the repository. The final reconstructed geometry is the Stage-3 mesh. The finalized V3 configuration and demo dataset support are in `Pixel2Mesh/`.
+Training is complete. The final checkpoint is local at `Pixel2Mesh/checkpoints/260000_000010.pt`, is Git-ignored, and must not be uploaded.
 
-## Development roadmap
+| Mesh stage | Vertices | Faces |
+| --- | ---: | ---: |
+| 1 | 156 | 308 |
+| 2 | 618 | 1,232 |
+| 3 (final) | 2,466 | 4,928 |
 
-Configure Google OAuth and add backend token verification, then build validated upload, real inference, the result viewer, and history as connected feature slices.
+Test-set evaluation metrics: Chamfer Distance **0.037181**, F1 @ τ **0.000640**, and F1 @ 2τ **0.001722**. These are metrics, not accuracy percentages.
 
-## Limitations
+## Next
 
-Full local CPU end-to-end reconstruction has not been verified; the existing predictor rejects CPU inference. Results from a single image are inherently uncertain for hidden surfaces, and performance on real product photos may differ from the training data. No reconstruction accuracy value is claimed here.
-
-See the [project PRD](docs/PRD/3D_Object_Reconstruction_PRD.pdf) for more context.
+Connect authenticated preflight to Pixel2Mesh inference, extract the final Stage-3 mesh, add OBJ/GLB output and an interactive result viewer, then persist reconstruction history and deploy. Full local CPU end-to-end inference is not yet verified.
