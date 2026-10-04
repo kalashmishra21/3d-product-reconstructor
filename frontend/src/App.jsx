@@ -38,7 +38,11 @@ export default function App() {
       <Route path="/auth/callback" element={<AuthRoute />} />
       <Route path="/dashboard" element={<AuthRoute />} />
       <Route path="/reconstruct" element={<AuthRoute />} />
-      <Route path="/result/:id" element={<PublicArea />} />
+      <Route path="/history" element={<AuthRoute />} />
+      <Route path="/model" element={<AuthRoute />} />
+      <Route path="/profile" element={<AuthRoute />} />
+      <Route path="/reconstructions/:id" element={<AuthRoute />} />
+      <Route path="/result/:id" element={<AuthRoute />} />
       <Route path="*" element={<PublicArea />} />
     </Routes>
   </>

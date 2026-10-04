@@ -66,19 +66,19 @@ const visit = async (path = '/dashboard') => {
 }
 await mkdir(new URL('../.review/', import.meta.url), { recursive: true })
 try {
-  await send('Page.enable'); await send('Runtime.enable')
+  await send('Page.enable'); await send('Runtime.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
   await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/src/lib/auth.js*` }] })
   await viewport(1440); await visit()
   await until("getComputedStyle(document.querySelector('.dash-sidebar')).position === 'fixed'")
   await until("document.body.innerText.includes('API connected')")
   assert.equal(await evaluate("document.querySelector('#dashboard-title').textContent"), 'Welcome back, Dashboard Test.')
-  assert.equal(await evaluate("document.querySelector('.dash-empty h3').textContent"), 'No reconstructions yet.')
+  assert.equal(await evaluate("document.querySelector('.dash-empty h3').textContent"), 'No saved reconstructions yet.')
   assert.equal(await evaluate("document.querySelector('.dash-categories').textContent.includes('13 trained object categories')"), true)
-  assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.dash-metrics dd'), element => element.textContent)"), ['0.037181', '0.000640', '0.001722'])
-  assert.equal(await evaluate("document.querySelector('.dash-system').textContent.includes('Integration pending')"), true)
+  assert.equal(await evaluate("document.querySelector('.stage-baseline').textContent.includes('2,466')"), true)
+  assert.equal(await evaluate("document.querySelector('.dash-system').textContent.includes('Integrated')"), true)
   assert.equal(await evaluate("document.querySelector('.dash-command .button').getAttribute('href')"), '/reconstruct')
   await until("!!document.querySelector('.dash-canvas canvas')")
-  for (const width of [1440, 1024, 768, 390, 320]) {
+  for (const width of [1440, 1280, 1024, 768, 390, 320]) {
     await viewport(width); await delay(500)
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.dash-sidebar')).display"), width < 768 ? 'none' : 'flex', `Styled sidebar at ${width}px`)
     assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `No overflow at ${width}px`)
@@ -87,7 +87,7 @@ try {
     await writeFile(new URL(`../.review/dashboard-${width}.png`, import.meta.url), Buffer.from(capture.data, 'base64'))
     console.log(`PASS responsive ${width}px (test-only session)`)
   }
-  await evaluate("document.querySelector('#model').scrollIntoView({behavior:'instant'})")
+  await evaluate("document.querySelector('.dash-model').scrollIntoView({behavior:'instant'})")
   await delay(150)
   const lowerCapture = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
   await writeFile(new URL('../.review/dashboard-320-model.png', import.meta.url), Buffer.from(lowerCapture.data, 'base64'))

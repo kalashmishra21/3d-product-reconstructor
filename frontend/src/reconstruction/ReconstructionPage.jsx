@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Arrow, Mark } from '../components/Icons'
-import { BackendStatus } from '../components/BackendStatus'
+import { Arrow } from '../components/Icons'
 import { DashboardIcon as Icon } from '../dashboard/DashboardIcon'
-import { dashboardProfile } from '../dashboard/profile'
-import { useAuth } from '../auth/AuthProvider'
-import { useBackendHealth } from '../lib/useBackendHealth'
 import { preflightErrorMessage, preflightImage } from '../lib/preflight'
 import { inferImage, inferenceErrorMessage } from '../lib/inference'
 import { formatBytes, inspectImageFile } from './image'
@@ -13,14 +9,12 @@ import { InputViewport } from './InputViewport'
 import { ResultViewport } from './ResultViewport'
 import { ExportPanel } from './ExportPanel'
 import { deriveObjectName, formatMilliseconds, validateMeshResponse } from './mesh'
+import { diagnoseMesh } from './meshDiagnostics'
 import './reconstruction.css'
 
 const steps = ['IMAGE', 'PREFLIGHT', 'MESH', 'EXPORT']
 
 export function ReconstructionPage() {
-  const { user } = useAuth()
-  const profile = dashboardProfile(user)
-  const health = useBackendHealth()
   const input = useRef(null)
   const request = useRef(null)
   const selectionVersion = useRef(0)
@@ -37,6 +31,7 @@ export function ReconstructionPage() {
   const [inferenceError, setInferenceError] = useState('')
   const [resultView, setResultView] = useState('mesh')
   const exportAvailable = useMemo(() => Boolean(mesh) && !validateMeshResponse(mesh), [mesh])
+  const diagnostic = useMemo(() => mesh ? diagnoseMesh(mesh.vertices) : null, [mesh])
 
   useEffect(() => {
     if (!selection?.file) { setPreviewUrl(''); return }
@@ -153,22 +148,17 @@ export function ReconstructionPage() {
   }
 
   return <div className="recon-page">
-    <header className="recon-topbar">
-      <Link className="recon-brand" to="/" aria-label="Reconstruct home"><Mark />reconstruct<span>.</span></Link>
-      <span className="recon-topbar-center">IMAGE / STRUCTURE / FORM <span>—</span> WORKSPACE 01</span>
-      <div className="recon-topbar-end"><BackendStatus health={health} /><Link to="/dashboard" className="recon-back">Back to overview <Arrow /></Link></div>
-    </header>
-
-    <main id="main-content" className="recon-main" tabIndex={-1}>
+    <div className="recon-main">
       <div className="recon-heading">
-        <div><p className="recon-eyebrow"><span />NEW RECONSTRUCTION / INPUT STUDIO</p><h1>Give an image <em>dimension.</em></h1><p className="recon-intro">Bring one product image into the workspace. Inspect the input, then verify it before reconstruction begins.</p></div>
-        <div className="recon-heading-index"><span>01 / 04</span><small>INPUT PREPARATION</small></div>
+        <div><p className="recon-eyebrow"><span />RECONSTRUCTION STUDIO</p><h1>Give an image <em>dimension.</em></h1><p className="recon-intro">Prepare a view. Inspect the model geometry. Export an asset.</p></div>
+        <Link className="workspace-link" to="/model">Model baseline <Arrow diagonal /></Link>
       </div>
 
       <div className="recon-workspace">
         <section className="recon-control-panel" aria-labelledby="recon-upload-title">
           <div className="recon-panel-heading"><span className="recon-panel-number">01</span><div><p className="recon-eyebrow">SOURCE IMAGE</p><h2 id="recon-upload-title">Select your view.</h2></div></div>
           <p className="recon-panel-intro">A single clear RGB product image gives the model its starting point. This stage checks the input only.</p>
+          <p className="recon-domain-note">Best results come from object categories and views similar to the model's ShapeNet training data.</p>
 
           <div className={'recon-drop' + (dragging ? ' is-dragging' : '') + (selection ? ' has-image' : '')}
             onDragEnter={(event) => { event.preventDefault(); dragDepth.current += 1; setDragging(true) }}
@@ -215,15 +205,16 @@ export function ReconstructionPage() {
             <strong>{objectName || 'Untitled object'} <span>— Stage 03 generated</span></strong>
             <dl><div><dt>Model</dt><dd>{mesh.model}</dd></div><div><dt>Vertices</dt><dd>{mesh.vertices_count.toLocaleString()}</dd></div><div><dt>Faces</dt><dd>{mesh.faces_count.toLocaleString()}</dd></div><div><dt>Inference</dt><dd>{mesh.latency_ms.toLocaleString()} ms</dd></div></dl>
             <div className="recon-timing"><span>Model load <b>{mesh.model_init_ms > 0 ? formatMilliseconds(mesh.model_init_ms) : 'READY / REUSED'}</b></span><span>Total request <b>{formatMilliseconds(mesh.total_ms)}</b></span></div>
-            <small>The real Stage-3 mesh is shown at right. Raw OBJ and GLB assets are available below.</small>
+            <small>Real model coordinates. Display fitting does not change exported geometry.</small>
           </div>}
           {mesh && <ExportPanel mesh={mesh} objectName={objectName} sourceFilename={selection?.file.name} />}
         </section>
 
         <section className={'recon-view-panel' + (mesh && resultView === 'mesh' ? ' is-result' : '')} aria-labelledby="recon-view-title">
           <div className="recon-view-header"><div><p className="recon-eyebrow">{mesh && resultView === 'mesh' ? 'REAL MODEL OUTPUT / 003' : 'SPATIAL INPUT STAGE / 001'}</p><h2 id="recon-view-title">{mesh && resultView === 'mesh' ? 'Real Stage-3 mesh' : 'Input inspection'}</h2></div><div className="recon-view-header-end">{mesh && resultView === 'input' && <button type="button" className="result-header-toggle" onClick={() => setResultView('mesh')}>View mesh</button>}<span className="recon-live-label">{inferencePhase === 'running' ? 'MODEL INFERENCE' : mesh && resultView === 'mesh' ? 'MESH GENERATED' : phase === 'ready' ? 'PREFLIGHT READY' : selection ? 'IMAGE LOADED' : 'AWAITING IMAGE'}</span></div></div>
+          {mesh && resultView === 'mesh' && diagnostic?.degenerate && <div className="recon-volume-note" role="status"><strong>Low-volume reconstruction</strong><p>The current model produced limited geometric depth for this image.</p><span>Inspection and raw OBJ / GLB export remain available.</span></div>}
           {mesh && resultView === 'mesh' ? <ResultViewport mesh={mesh} objectName={objectName} onInput={() => setResultView('input')} /> : <InputViewport previewUrl={previewUrl} width={selection?.width} height={selection?.height} scanning={phase === 'submitting' || inferencePhase === 'running'} />}
-          <div className="recon-view-foot"><span>{selection ? 'ACTUAL INPUT IMAGE / 2D PLANE' : 'PROCEDURAL SPATIAL GUIDE'}</span><span>{selection ? 'PREVIEW ONLY — NOT A RECONSTRUCTED MESH' : 'ILLUSTRATIVE — NOT MODEL OUTPUT'}</span></div>
+          <div className="recon-view-foot"><span>{mesh && resultView === 'mesh' ? 'ACTUAL STAGE-3 GEOMETRY' : selection ? 'ACTUAL INPUT IMAGE / 2D PLANE' : 'PROCEDURAL SPATIAL GUIDE'}</span><span>{mesh && resultView === 'mesh' ? `${mesh.vertices_count.toLocaleString()} VERTICES / ${mesh.faces_count.toLocaleString()} FACES` : selection ? 'INPUT PREVIEW ONLY' : 'ILLUSTRATIVE — NOT MODEL OUTPUT'}</span></div>
         </section>
       </div>
 
@@ -235,7 +226,6 @@ export function ReconstructionPage() {
           return <li key={step} className={complete ? 'is-complete' : current ? 'is-current' : 'is-future'}><span>0{index + 1}</span><strong>{step}</strong><small>{index === 3 && complete ? 'AVAILABLE' : complete ? 'COMPLETE' : current ? 'CURRENT' : 'FUTURE'}</small></li>
         })}</ol>
       </nav>
-      <footer className="recon-footer"><span>RECONSTRUCT / IMAGE TO FORM</span><span>Signed in as {profile.label}</span></footer>
-    </main>
+    </div>
   </div>
 }

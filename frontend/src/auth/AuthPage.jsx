@@ -8,7 +8,7 @@ import { useAuth } from './AuthProvider'
 
 const copy = {
   login: { kicker: 'WELCOME BACK', title: 'Sign in to your space.', intro: 'Access your reconstruction workspace.', submit: 'Sign in', busy: 'Signing in…' },
-  signup: { kicker: 'CREATE AN ACCOUNT', title: 'Begin with one image.', intro: 'Create your account for the coming reconstruction tools.', submit: 'Create account', busy: 'Creating account…' },
+  signup: { kicker: 'CREATE AN ACCOUNT', title: 'Begin with one image.', intro: 'Create your account to prepare, inspect, and export model geometry.', submit: 'Create account', busy: 'Creating account…' },
   forgot: { kicker: 'ACCOUNT RECOVERY', title: 'Reset your password.', intro: 'We will send a secure reset link to your email.', submit: 'Send reset link', busy: 'Sending link…' },
   reset: { kicker: 'ACCOUNT RECOVERY', title: 'Choose a new password.', intro: 'Enter a new password for your account.', submit: 'Save new password', busy: 'Saving password…' },
 }

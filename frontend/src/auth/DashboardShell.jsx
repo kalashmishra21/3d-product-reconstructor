@@ -4,8 +4,9 @@ import { signOut } from '../lib/auth'
 import { useAuth } from './AuthProvider'
 import { useBackendHealth } from '../lib/useBackendHealth'
 import { Dashboard } from '../dashboard/Dashboard'
+import { WorkspaceLayout } from '../dashboard/WorkspaceLayout'
 
-export function DashboardShell() {
+export function DashboardShell({ children }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const health = useBackendHealth()
@@ -24,5 +25,5 @@ export function DashboardShell() {
     }
   }
 
-  return <Dashboard user={user} health={health} pending={pending} error={error} onLogout={logout} />
+  return <WorkspaceLayout user={user} health={health} pending={pending} error={error} onLogout={logout}>{children ?? <Dashboard />}</WorkspaceLayout>
 }
