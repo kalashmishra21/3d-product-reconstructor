@@ -109,9 +109,6 @@
   .recon-axis span:first-child { @apply absolute -top-3 -right-1; }
   .recon-axis span:last-child { @apply absolute -right-3 -bottom-1; }
   .recon-view-foot { @apply flex flex-wrap justify-between gap-2 border-t border-[#54634b] px-5 py-4 font-mono text-[8px] tracking-[.1em] text-[#bdcdb2] sm:px-7; }
-  .recon-view-panel.is-result .recon-view-foot span { font-size: 0; }
-  .recon-view-panel.is-result .recon-view-foot span:first-child::after { content: 'ACTUAL STAGE-3 GEOMETRY / 3D MESH'; font-size: 8px; }
-  .recon-view-panel.is-result .recon-view-foot span:last-child::after { content: '2466 VERTICES / 4928 FACES'; font-size: 8px; }
   .result-view-wrap { @apply flex min-h-75 flex-1 flex-col sm:min-h-90 lg:min-h-120; }
   .result-view-tools { @apply flex flex-wrap items-center justify-between gap-3 border-b border-[#54634b] px-5 py-3 sm:px-7; }
   .result-mode-group { @apply flex flex-wrap gap-1; }
@@ -137,7 +134,6 @@
 
 @media (min-width: 1024px) {
   .recon-view-panel { align-self: start; height: min(82vh, 820px); min-height: 680px; }
-  .recon-page:has(.recon-view-panel.is-result) { overflow-x: clip; }
   .recon-workspace:has(.recon-view-panel.is-result) { overflow: visible; }
   .recon-view-panel.is-result { position: sticky; top: 0; }
 }
@@ -157,4 +153,91 @@
 
 @media (prefers-reduced-motion: reduce) {
   .recon-page *, .recon-page *::before, .recon-page *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* Workstation panels own their surfaces; the grid never paints unused row space. */
+@layer components {
+  .recon-page { @apply overflow-visible bg-transparent; background-image: none; }
+  .recon-main { @apply max-w-none px-0; }
+  .recon-heading { @apply items-end pt-3 pb-8 sm:pt-4 lg:pt-4 lg:pb-9; }
+  .recon-heading h1 { @apply mt-3 text-[clamp(34px,4vw,64px)] leading-[1.1]; }
+  .recon-intro { @apply mt-4 text-sm; }
+  .recon-eyebrow { @apply text-[10px] leading-5 tracking-[.12em]; }
+  .recon-workspace { @apply items-start gap-6 overflow-visible rounded-none border-0 bg-transparent shadow-none lg:grid-cols-[minmax(285px,.72fr)_minmax(0,1.28fr)]; }
+  .recon-control-panel { @apply rounded-panel border border-border/70 bg-surface px-5 py-6 sm:px-6 xl:px-7; }
+  .recon-panel-heading h2 { @apply text-[28px]; }
+  .recon-panel-intro { @apply text-[13px] leading-6; }
+  .recon-domain-note { @apply mt-3 text-xs leading-6 text-muted; }
+  .recon-drop { @apply mt-5 min-h-52 px-4 py-6 sm:min-h-52; }
+  .recon-drop.has-image { @apply min-h-0 py-4; }
+  .recon-drop.has-image .recon-drop-symbol, .recon-drop.has-image .recon-drop-copy { @apply hidden; }
+  .recon-drop.has-image .recon-browse { @apply mt-2; }
+  .recon-drop.has-image .recon-drop-limit { @apply mt-2; }
+  .recon-drop-copy { @apply text-xs; }
+  .recon-browse { @apply text-xs; }
+  .recon-drop-limit { @apply text-[10px]; }
+  .recon-selection-head, .recon-object-field, .recon-source-label { @apply text-[11px]; }
+  .recon-object-field input { @apply min-h-12 text-base; }
+  .recon-selection dt { @apply text-[11px]; }
+  .recon-selection dd { @apply text-xs; }
+  .recon-submit, .recon-infer { @apply text-xs tracking-[.04em]; }
+  .recon-submit-note, .recon-ready small { @apply text-xs leading-6; }
+  .recon-ready { @apply border-0 border-l-2 border-olive/60 bg-transparent pl-4 pr-0; }
+  .recon-ready p, .recon-ready > span { @apply text-[11px] flex-wrap; }
+  .recon-mesh-result { @apply border-0 border-t border-border bg-transparent px-0 pt-6 pb-1; }
+  .recon-mesh-result dt, .recon-timing { @apply text-[11px] leading-5; }
+  .recon-timing b, .recon-mesh-result small { @apply text-xs leading-6; }
+  .recon-export { @apply border-0 border-t border-border bg-transparent px-0 pt-6 pb-0; }
+  .recon-export-heading { @apply border-0 pb-1; }
+  .recon-export-heading > span { @apply text-[10px]; }
+  .recon-export-actions { @apply gap-2 bg-transparent; }
+  .recon-export-actions button { @apply min-h-18 rounded-sm border border-border bg-surface-elevated px-3; }
+  .recon-export-actions small { @apply text-xs; }
+  .recon-export-meta { @apply text-[11px]; }
+  .recon-export-status { @apply text-xs leading-6; }
+  .recon-view-panel { @apply rounded-panel border border-border bg-[#202b21] shadow-panel; height: auto; min-height: 0; align-self: start; width: 100%; }
+  .recon-view-header { @apply flex-wrap gap-3 px-5 pt-5 pb-4 sm:px-6; }
+  .recon-view-header h2 { @apply text-[25px]; }
+  .recon-view-header-end { @apply min-w-0 flex-wrap; }
+  .recon-live-label { @apply text-[10px] tracking-[.04em]; }
+  .recon-volume-note { @apply mx-5 mb-3 border-l-2 border-warning/60 bg-warning/5 px-3 py-2 sm:mx-6; }
+  .recon-volume-note strong { @apply text-xs font-medium text-warning; }
+  .recon-volume-note p { @apply mt-1 text-xs leading-5 text-ivory; }
+  .recon-volume-note > span { @apply mt-1 block text-[11px] leading-5 text-muted; }
+  .recon-viewport { @apply flex-none; height: clamp(340px, 42vw, 580px); min-height: 0; }
+  .result-view-wrap { @apply min-h-0 flex-none; }
+  .result-stage-canvas { @apply min-h-0 flex-none; height: clamp(330px, 38vw, 540px); }
+  .result-view-tools { @apply gap-2 px-3 py-3 sm:px-5; }
+  .result-mode-group button, .result-fit, .result-reset { @apply min-h-11 rounded-xs border border-transparent px-2.5 font-mono text-[11px] tracking-normal text-muted hover:text-ivory focus-visible:outline-2 focus-visible:outline-olive; }
+  .result-mode-group button.is-active { @apply border-olive/25 bg-accent-soft text-olive; }
+  .result-camera-group { @apply flex; }
+  .result-camera-group button { @apply text-olive; }
+  .result-view-presets { @apply flex flex-wrap items-center gap-1 border-b border-border/40 px-3 py-1 sm:px-5; }
+  .result-view-presets button { @apply min-h-11 px-2 font-mono text-[11px] text-muted hover:text-ivory; }
+  .result-view-presets button[aria-pressed=true] { @apply text-olive underline underline-offset-4; }
+  .result-view-presets > span { @apply ml-auto text-[10px] font-mono text-muted; }
+  .result-view-caption, .recon-view-foot { @apply text-[10px] leading-5 tracking-[.03em] px-4 sm:px-5; }
+  .recon-view-panel.is-result .recon-view-foot span { font-size: 10px; }
+  .result-header-toggle { @apply min-h-11 text-[11px]; }
+  .result-static-state { @apply min-h-60 px-6 text-center text-sm leading-7 tracking-normal; }
+  .recon-pipeline { @apply mt-8; }
+  .recon-pipeline li { @apply bg-transparent px-3 py-4 sm:px-5; }
+  .recon-pipeline ol { @apply bg-transparent gap-0; }
+  .recon-pipeline li > span, .recon-pipeline li small { @apply text-[10px]; }
+  .recon-pipeline li.is-complete { @apply bg-accent-soft border-olive/50; }
+}
+@media (min-width: 1024px) {
+  .recon-view-panel, .recon-view-panel.is-result { position: sticky; top: 20px; height: auto; min-height: 0; }
+  .result-stage-canvas { height: clamp(260px, calc(100svh - 460px), 540px); }
+}
+@media (max-width: 1023px) {
+  .recon-view-panel, .recon-view-panel.is-result { position: static; }
+}
+@media (max-width: 639px) {
+  .recon-heading { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .recon-view-header h2 { font-size: 23px; }
+  .recon-live-label { font-size: 10px; }
+  .recon-viewport { min-height: 0; height: 330px; }
+  .result-stage-canvas { height: 330px; }
+  .result-view-presets > span { width: 100%; margin: 0; padding: 5px 8px; }
 }

@@ -1,6 +1,7 @@
 // Run with Vite on 5173 and test-only Chrome debugging on 9224.
 // Intercepts auth and preflight only in this isolated browser tab.
 import assert from 'node:assert/strict'
+import { healthyStage3 } from './fixtures/healthyStage3.mjs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
@@ -15,12 +16,7 @@ let serial = 0
 let authenticated = true
 let preflightStatus = 200
 let requests = 0
-const mockMesh = JSON.stringify({
-  status: 'complete', model: 'Pixel2Mesh', stage: 3,
-  vertices_count: 2466, faces_count: 4928, latency_ms: 981.4,
-  vertices: Array.from({ length: 2466 }, () => [0, 0, 0]),
-  faces: Array.from({ length: 4928 }, () => [0, 1, 2]),
-})
+let mockMesh = JSON.stringify(healthyStage3())
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const id = ++serial
@@ -74,7 +70,7 @@ const viewport = (width) => send('Emulation.setDeviceMetricsOverride', { width, 
 await mkdir(new URL('../.review/', import.meta.url), { recursive: true })
 await mkdir(downloadDirectory, { recursive: true })
 try {
-  await send('Page.enable'); await send('Runtime.enable')
+  await send('Page.enable'); await send('Runtime.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
   await send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: fileURLToPath(downloadDirectory) })
   await send('Fetch.enable', { patterns: [
     { urlPattern: `${origin}/src/lib/auth.js*` },
@@ -94,7 +90,7 @@ try {
   await until("!!document.querySelector('.recon-scene canvas')")
   assert.equal(await evaluate("!!document.querySelector('.recon-export')"), false)
   assert.equal(await evaluate("document.body.innerText.includes('Preflight checks the image only.')"), true)
-  for (const width of [1440, 1024, 768, 390, 320]) {
+  for (const width of [1440, 1280, 1024, 768, 390, 320]) {
     await viewport(width); await delay(400)
     assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `No overflow at ${width}`)
     assert.equal(await evaluate("document.querySelector('.recon-browse').getBoundingClientRect().width > 70"), true)
@@ -142,12 +138,29 @@ try {
   assert.equal(await evaluate("Array.from(document.querySelectorAll('.recon-pipeline li')).map(e => e.className).join('|')"), 'is-complete|is-complete|is-complete|is-complete')
   await until("!!document.querySelector('.recon-export')")
   assert.equal(await evaluate("document.querySelector('.recon-pipeline li:last-child small').textContent"), 'AVAILABLE')
-  for (const width of [1440, 1024, 768, 390, 320]) {
+  for (const width of [1440, 1280, 1024, 768, 390, 320]) {
     await viewport(width); await delay(250)
     assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `No result overflow at ${width}`)
     assert.equal(await evaluate("document.querySelector('.recon-export-actions button').getBoundingClientRect().width > 100"), true)
   }
   await viewport(1440)
+  console.log('WORKSPACE_LAYOUT', await evaluate(`JSON.stringify(Object.fromEntries(['.recon-workspace','.recon-control-panel','.recon-view-panel','.result-view-wrap','.result-stage-canvas','.result-view-caption','.recon-view-foot'].map(selector => { const el=document.querySelector(selector), r=el.getBoundingClientRect(), s=getComputedStyle(el); return [selector,{height:r.height,clientHeight:el.clientHeight,scrollHeight:el.scrollHeight,background:s.backgroundColor,minHeight:s.minHeight,alignSelf:s.alignSelf,position:s.position,overflow:s.overflow}]; })))`))
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.recon-workspace')).backgroundColor"), 'rgba(0, 0, 0, 0)', 'Grid must not paint a tall olive filler')
+  assert.equal(await evaluate("!!document.querySelector('.recon-volume-note')"), false, 'Healthy TEST fixture has no warning')
+  await evaluate("document.querySelector('.recon-view-panel').setAttribute('data-review', 'TEST FIXTURE ? NOT MODEL OUTPUT'); document.querySelector('.recon-view-panel h2').textContent = 'TEST FIXTURE / viewer review'")
+  for (const width of [1440, 1280, 1024, 768, 390, 320]) {
+    await viewport(width); await delay(350)
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.recon-view-panel')).position"), width >= 1024 ? 'sticky' : 'static')
+    await evaluate("document.querySelector('.recon-view-panel').scrollIntoView({behavior:'instant', block:'start'})")
+    const image = await send('Page.captureScreenshot', { format:'png' })
+    await writeFile(new URL(`../.review/stage10-result-${width}.png`, import.meta.url), Buffer.from(image.data, 'base64'))
+  }
+  await viewport(1440)
+  for (const preset of ['front', 'side', 'top', 'iso']) {
+    await evaluate(`Array.from(document.querySelectorAll('.result-view-presets button')).find(b => b.textContent.toLowerCase() === '${preset}').click()`)
+    await until(`document.querySelector('.result-view-caption').textContent.includes('${preset.toUpperCase()} VIEW')`)
+  }
+  await evaluate("document.querySelector('.result-reset').click()")
   await evaluate("document.querySelector('.recon-export-actions button:first-child').click()")
   try {
     await until("window.__downloadNames?.includes('whiteboard-stage3.obj')")
@@ -168,8 +181,17 @@ try {
   await until("document.querySelector('.recon-view-panel h2')?.textContent === 'Input inspection'")
   await evaluate("document.querySelector('.result-header-toggle').click()")
   await until("document.querySelector('.recon-view-panel h2')?.textContent === 'Real Stage-3 mesh'")
+  await until("!!document.querySelector('.result-stage-canvas canvas')")
+  await delay(500)
+  assert.equal(await evaluate("(async()=>{const f=await import('/node_modules/.vite/deps/@react-three_fiber.js');return Array.from(f._roots).some(([c,r])=>c.closest('.result-stage-canvas') && r.store.getState().gl.info.render.frame > 1)})()"), true, 'Demand renderer draws settled geometry after Input comparison')
   await evaluate("document.querySelector('.result-fit').click()")
   assert.equal(await evaluate("document.querySelector('.result-mode-group button:first-child').classList.contains('is-active')"), true)
+  const nearLine = healthyStage3()
+  nearLine.vertices = nearLine.vertices.map(([x,y,z]) => [x,y * 0.02,z * 0.0005])
+  mockMesh = JSON.stringify(nearLine)
+  await evaluate("document.querySelector('.recon-infer').click()")
+  await until("!!document.querySelector('.recon-volume-note')")
+  assert.equal(await evaluate("document.querySelector('.recon-export-actions button').disabled"), false, 'Collapsed geometry remains exportable')
   await evaluate(`(async () => {
     const canvas = document.createElement('canvas'); canvas.width = 12; canvas.height = 9;
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));

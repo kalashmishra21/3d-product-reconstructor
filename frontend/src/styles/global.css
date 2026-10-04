@@ -10,6 +10,17 @@
   --color-scene: #252c22;
   --color-scene-ink: #bdc5ab;
   --color-warning: #d6b396;
+  --color-background: #1b1e1a;
+  --color-surface-elevated: #293128;
+  --color-border: #424c3e;
+  --color-text-primary: #eeeede;
+  --color-text-secondary: #b5bdad;
+  --color-accent: #d3ddaa;
+  --color-accent-soft: #d3ddaa14;
+  --color-success: #c5d6a5;
+  --color-danger: #efb29f;
+  --radius-panel: 6px;
+  --shadow-panel: 0 16px 48px #080f0b24, inset 0 1px 0 #eff6dd08;
   --font-sans: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: Georgia, "Times New Roman", serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -17,6 +28,7 @@
 
 @layer base {
   :root { color-scheme: dark; }
+  :root { --panel-padding: clamp(20px, 2.4vw, 36px); --section-gap: clamp(28px, 4vw, 56px); }
   html { @apply scroll-smooth scroll-pt-6; }
   body { @apply m-0 bg-charcoal font-sans text-ivory antialiased; }
   h1, h2, h3, p { @apply m-0; }

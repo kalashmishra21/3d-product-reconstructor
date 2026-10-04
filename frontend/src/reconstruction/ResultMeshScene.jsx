@@ -1,82 +1,75 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { Vector3 } from 'three'
+import { DoubleSide, Vector3 } from 'three'
 import { createRawStage3Geometry } from './geometry.js'
+import { useMediaQuery } from '../lib/useMediaQuery'
 
-function RealMesh({ mesh, mode, fitVersion }) {
-  const { invalidate } = useThree()
+const directions = { iso: [3, 2.2, 4], front: [0, 0, 1], side: [1, 0, 0], top: [0, 1, 0] }
+function RealMesh({ mesh, mode, view, fitVersion, resetVersion, reduced }) {
+  const { camera, size, invalidate } = useThree()
   const controls = useRef(null)
   const geometry = useMemo(() => {
-    const result = createRawStage3Geometry(mesh)
-    const center = new Vector3()
-    const size = new Vector3()
-    result.boundingBox?.getCenter(center)
-    result.boundingBox?.getSize(size)
-    const largest = Math.max(size.x, size.y, size.z, 0.0001)
-    const displayScale = 2.45 / largest
-    // This geometry is a display copy. The raw model arrays in reconstruction
-    // state remain unchanged for the later OBJ/GLB export stage.
-    result.translate(-center.x, -center.y, -center.z)
-    result.scale(displayScale, displayScale, displayScale)
-    result.computeBoundingBox()
-    result.computeBoundingSphere()
-    return result
+    const copy = createRawStage3Geometry(mesh)
+    const center = copy.boundingSphere.center.clone()
+    const radius = copy.boundingSphere.radius
+    copy.translate(-center.x, -center.y, -center.z)
+    // Uniform display fitting on a fresh geometry copy. Raw response/export arrays
+    // remain untouched; proportions are never changed to disguise limited depth.
+    if (radius > 0) copy.scale(1.3 / radius, 1.3 / radius, 1.3 / radius)
+    copy.computeBoundingBox()
+    copy.computeBoundingSphere()
+    return copy
   }, [mesh.vertices, mesh.faces])
-
   useEffect(() => () => geometry.dispose(), [geometry])
-  useEffect(() => { invalidate() }, [geometry, invalidate])
-  useEffect(() => {
+  const fit = (direction) => {
     if (!controls.current) return
+    const radius = Math.max(geometry.boundingSphere.radius, 0.1)
+    const vertical = camera.fov * Math.PI / 360
+    const horizontal = Math.atan(Math.tan(vertical) * size.width / Math.max(size.height, 1))
+    const distance = radius / Math.sin(Math.min(vertical, horizontal)) * 1.12
+    camera.near = Math.max(distance / 1000, 0.001)
+    camera.far = distance * 100
+    camera.up.set(...(view === 'top' ? [0, 0, -1] : [0, 1, 0]))
+    camera.position.copy(direction.normalize().multiplyScalar(distance))
     controls.current.target.set(0, 0, 0)
-    controls.current.object.position.set(0, 0, 3.8)
+    controls.current.minDistance = radius * 1.05
+    controls.current.maxDistance = distance * 5
+    camera.updateProjectionMatrix()
     controls.current.update()
-  }, [fitVersion])
-
-  return <>
-    <group>
-      {mode === 'vertices' ? <points geometry={geometry}>
-        <pointsMaterial color="#d9e7b1" size={2.2} sizeAttenuation={false} />
-      </points> : <mesh geometry={geometry}>
-        {mode === 'wireframe'
-          ? <meshBasicMaterial color="#d3e5ae" wireframe transparent opacity={0.95} />
-          : <meshStandardMaterial color="#c4cba8" emissive="#657050" emissiveIntensity={0.42} roughness={0.72} metalness={0.04} flatShading={false} side={2} />}
-      </mesh>}
-    </group>
-    <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.08} enablePan minDistance={2.2} maxDistance={7} target={[0, 0, 0]} />
-  </>
-}
-
-function Stage({ mesh, mode, fitVersion }) {
-  const { invalidate } = useThree()
-  useEffect(() => { invalidate() }, [mode, fitVersion, invalidate])
+    invalidate()
+  }
+  useEffect(() => { fit(new Vector3(...directions[view])) }, [geometry, view, resetVersion, size.width, size.height])
+  useEffect(() => { if (fitVersion) fit(camera.position.clone().sub(controls.current?.target ?? new Vector3())) }, [fitVersion])
   useEffect(() => {
-    const refresh = () => invalidate()
-    window.addEventListener('scroll', refresh, { passive: true })
-    window.addEventListener('resize', refresh)
-    refresh()
-    return () => {
-      window.removeEventListener('scroll', refresh)
-      window.removeEventListener('resize', refresh)
+    // Canvas setup can resize/clear the drawing buffer after the initial commit.
+    // Request a settled frame, and redraw when a background tab becomes visible.
+    let frame = requestAnimationFrame(() => invalidate())
+    const reveal = () => {
+      if (!document.hidden) {
+        cancelAnimationFrame(frame)
+        frame = requestAnimationFrame(() => invalidate())
+      }
     }
-  }, [invalidate])
+    document.addEventListener('visibilitychange', reveal)
+    return () => { cancelAnimationFrame(frame); document.removeEventListener('visibilitychange', reveal) }
+  }, [geometry, mode, view, fitVersion, resetVersion, size.width, size.height, size.top, size.left, invalidate])
   return <>
-    <ambientLight intensity={1.25} color="#dfe9c7" />
-    <directionalLight position={[3, 4, 5]} intensity={2.6} color="#f5f2d9" />
-    <directionalLight position={[-4, -1, 2]} intensity={1.1} color="#82996c" />
-    <gridHelper args={[8, 16, '#687c59', '#3e503d']} position={[0, -1.65, -1.25]} />
-    <RealMesh mesh={mesh} mode={mode} fitVersion={fitVersion} />
+    {mode === 'vertices' ? <points geometry={geometry}><pointsMaterial color="#e3ebc5" size={3} sizeAttenuation={false} /></points> :
+      <mesh geometry={geometry}>{mode === 'wireframe' ? <meshBasicMaterial color="#cbdbaa" wireframe /> :
+        <meshStandardMaterial color="#d4d3bb" roughness={0.82} metalness={0} side={DoubleSide} />}</mesh>}
+    <gridHelper args={[7, 14, '#52654c', '#33432f']} position={[0, geometry.boundingBox.min.y - 0.16, 0]} />
+    <OrbitControls ref={controls} makeDefault enableDamping={!reduced} dampingFactor={0.12} enablePan />
   </>
 }
-
-export default function ResultMeshScene({ mesh, mode, fitVersion }) {
-  return <Canvas
-    frameloop="always"
-    dpr={[1, 1.5]}
-    camera={{ position: [0, 0, 3.8], fov: 38, near: 0.01, far: 100 }}
+export default function ResultMeshScene(props) {
+  const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
+  return <Canvas frameloop="demand" dpr={[1, 1.5]} camera={{ position: [3, 2.2, 4], fov: 38, near: 0.01, far: 100 }}
     gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
-    fallback={null}
-  >
-    <Stage mesh={mesh} mode={mode} fitVersion={fitVersion} />
+    fallback={<p className="result-static-state">3D is unavailable in this browser. Mesh metadata and exports remain available.</p>}>
+    <ambientLight intensity={0.85} color="#e9eddd" />
+    <directionalLight position={[4, 5, 4]} intensity={2.4} color="#fff5e3" />
+    <directionalLight position={[-4, 2, -3]} intensity={1.3} color="#a4b593" />
+    <RealMesh {...props} reduced={reduced} />
   </Canvas>
 }

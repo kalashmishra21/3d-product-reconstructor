@@ -27,8 +27,12 @@ export function RouteEffects() {
       '/reset-password': 'New password — Reconstruct',
       '/auth/callback': 'Completing sign-in — Reconstruct',
       '/dashboard': 'Workspace — Reconstruct',
+      '/reconstruct': 'New reconstruction — Reconstruct',
+      '/history': 'History — Reconstruct',
+      '/model': 'Model baseline — Reconstruct',
+      '/profile': 'Your profile — Reconstruct',
     }
-    document.title = titles[pathname] ?? 'Reconstruct — Coming next'
+    document.title = titles[pathname] ?? (/^\/(?:reconstructions|result)\//.test(pathname) ? 'Result detail — Reconstruct' : 'Reconstruct — Page not found')
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView()
     else if (previousPath.current !== pathname) {
       window.scrollTo(0, 0)

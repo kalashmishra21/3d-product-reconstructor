@@ -117,3 +117,100 @@
   .dash-footer svg { @apply size-3; }
   .dash-error { @apply mb-5 border border-warning/50 bg-warning/10 px-4 py-3 text-sm text-warning; }
 }
+
+@layer components {
+  .dash-layout { @apply md:pl-20 xl:pl-56; background: radial-gradient(ellipse at 95% 0%, #3143301a, transparent 55%), var(--color-background); }
+  .dash-main { @apply max-w-380 px-5 sm:px-8 lg:px-10; }
+  .dash-sidebar { @apply bg-[#1e261de8] border-r-border/50; }
+  .dash-navigation a { @apply text-[13px]; }
+  .dash-navigation a[aria-current=page] { @apply border-olive/15 bg-accent-soft text-olive; }
+  .dash-sidebar-caption { @apply text-[10px] leading-5 tracking-[.08em]; }
+  .dash-kicker { @apply text-[10px] leading-5 tracking-[.12em] uppercase; }
+  .dash-header { @apply min-h-22 items-center border-b border-border/50 py-5 mb-7; }
+  .dash-header h1 { @apply text-[clamp(25px,2.4vw,34px)]; }
+  .dash-header-copy > p:last-child { @apply text-[13px]; }
+  .dash-header .backend-status, .dash-sidebar .backend-status { @apply text-[11px]; }
+  .dash-profile-popover { @apply border-border bg-surface-elevated shadow-panel; }
+  .dash-command { @apply rounded-panel border-border/70 bg-surface shadow-panel md:grid-cols-[1.2fr_1fr]; }
+  .dash-command-copy { @apply p-6 sm:p-8 xl:p-10; }
+  .dash-command h2 { @apply mt-5 text-[clamp(32px,3.25vw,52px)] leading-[1.1]; }
+  .dash-command-copy > p:not(.dash-kicker) { @apply max-w-100 text-sm leading-7; }
+  .dash-process { @apply text-[11px]; }
+  .dash-study-label { @apply text-[10px]; }
+  .dash-study-note { @apply text-[11px] leading-5; }
+  .dash-study-controls button { @apply min-h-11 text-[11px]; }
+  .dash-quick-actions { @apply my-8; }
+  .dash-quick-actions a { @apply text-[13px] py-5; }
+  .dash-lower-grid { @apply gap-10 lg:grid-cols-[1.25fr_1fr]; }
+  .dash-section-heading h2 { @apply text-2xl; }
+  .dash-empty { @apply min-h-65 rounded-none border-0 border-b border-solid border-border/50 bg-transparent px-2 py-8 items-start text-left; }
+  .dash-empty > svg { @apply mb-4 size-7 text-muted; }
+  .dash-empty h3 { @apply text-xl; }
+  .dash-empty p { @apply max-w-105 text-sm leading-7; }
+  .dash-text-link, .workspace-link { @apply inline-flex min-h-11 items-center gap-3 text-[13px] text-olive; }
+  .workspace-link svg { @apply size-4; }
+  .dash-model { @apply lg:pl-9; }
+  .dash-model h2 { @apply mt-3 text-2xl leading-snug tracking-tight; }
+  .stage-baseline { @apply mt-6 grid grid-cols-3 gap-3; }
+  .stage-baseline dt { @apply mb-3 font-mono text-[11px] text-muted; }
+  .stage-baseline dd { @apply font-mono text-[15px] leading-7; }
+  .stage-baseline dd span { @apply font-sans text-[11px] text-muted; }
+  .dash-categories { @apply mt-5 text-xs text-olive; }
+  .model-context { @apply mt-4 text-xs leading-6 text-muted; }
+  .dash-system { @apply mt-10 py-6 border-border/70; }
+  .dash-system dt { @apply text-xs; }
+  .dash-system dd { @apply text-[13px]; }
+  .dash-system dd button { @apply min-h-11 text-xs; }
+  .system-note { @apply mt-4 text-xs text-muted; }
+  .dash-footer { @apply mt-8 py-6 text-[10px] leading-5; }
+  .dash-footer a { @apply text-xs; }
+  .workspace-loading { @apply min-h-80 py-10 text-muted; }
+  .workspace-page { @apply min-w-0 pb-6; }
+  .workspace-page-heading { @apply flex flex-wrap items-end justify-between gap-6 pt-4 pb-10; }
+  .workspace-page-heading h1 { @apply mt-4 text-[clamp(38px,4.5vw,66px)] leading-[1.06] tracking-[-.055em]; }
+  .workspace-page-heading h1 em { @apply text-olive; }
+  .workspace-page-heading p:not(.dash-kicker) { @apply mt-5 max-w-150 text-sm leading-7 text-muted; }
+  .workspace-tag { @apply inline-flex min-h-9 items-center border border-olive/25 px-3 font-mono text-[10px] tracking-wider text-olive; }
+  .history-tools { @apply flex flex-wrap items-center gap-3 border-y border-border/70 py-4; }
+  .history-tools input { @apply min-h-11 w-full max-w-82 border-0 bg-surface px-4 text-sm; }
+  .history-tools button { @apply min-h-11 px-4 text-sm text-muted; }
+  .history-tools > span { @apply ml-auto text-xs leading-6 text-muted; }
+  .history-empty { @apply grid min-h-100 items-center gap-8 py-12 md:grid-cols-[.8fr_1.2fr] lg:gap-14; }
+  .history-empty h2 { @apply mt-4 text-[clamp(26px,3vw,38px)] tracking-tight; }
+  .history-empty p:not(.dash-kicker) { @apply mt-4 max-w-120 text-sm leading-7 text-muted; }
+  .history-empty-graphic { @apply relative flex min-h-56 flex-col items-center justify-center gap-6 text-olive/65; background: linear-gradient(#a6bc8612 1px, transparent 1px), linear-gradient(90deg,#a6bc8612 1px,transparent 1px); background-size: 32px 32px; mask-image: radial-gradient(ellipse,#000 35%,transparent 75%); }
+  .history-empty-graphic svg { @apply size-26; }
+  .history-empty-graphic span { @apply font-mono text-[10px] tracking-widest; }
+  .workspace-footnote { @apply flex flex-wrap gap-x-8 gap-y-3 border-t border-border py-5 font-mono text-[10px] tracking-wider text-muted; }
+  .model-stage-grid { @apply grid divide-y divide-border border-y border-border md:grid-cols-3 md:divide-x md:divide-y-0; }
+  .model-stage { @apply min-w-0 px-5 py-6 sm:px-7; }
+  .model-stage-top { @apply flex items-center justify-between gap-3 font-mono text-[10px] tracking-wider text-muted; }
+  .model-stage-top > span:first-child { @apply text-xl text-olive; }
+  .model-topology { @apply my-5 text-olive/65; }
+  .model-topology svg { @apply mx-auto h-30 w-full max-w-65; }
+  .model-stage h2 { @apply text-xl; }
+  .model-stage dl { @apply mt-4 grid grid-cols-2 gap-4; }
+  .model-stage dt { @apply text-xs text-muted; }
+  .model-stage dd { @apply mt-1 font-mono text-xl; }
+  .model-details-grid { @apply mt-10 grid gap-10 lg:grid-cols-2; }
+  .model-details-grid h2 { @apply mt-3 text-2xl leading-snug tracking-tight; }
+  .model-evaluation { @apply mt-5; }
+  .model-evaluation > div { @apply flex flex-wrap justify-between gap-3 border-b border-border/60 py-4 text-sm; }
+  .model-evaluation dt { @apply text-muted; }
+  .model-evaluation dd { @apply font-mono text-ivory; }
+  .model-limitation { @apply border-l border-olive/40 pl-6; }
+  .model-limitation > p:not(.dash-kicker) { @apply mt-4 text-sm leading-7 text-muted; }
+  .profile-layout { @apply grid gap-10 border-t border-border py-9 md:grid-cols-[.75fr_1.25fr] lg:gap-16; }
+  .profile-identity .dash-avatar { @apply size-20 text-2xl; }
+  .profile-identity h2 { @apply mt-5 break-words text-2xl; overflow-wrap:anywhere; }
+  .profile-identity > p { @apply mt-2 text-sm text-muted; }
+  .profile-identity .button { @apply mt-7 min-w-35; }
+  .profile-details > div { @apply grid gap-2 border-b border-border/60 py-5 sm:grid-cols-[.7fr_1fr]; }
+  .profile-details dt { @apply text-sm text-muted; }
+  .profile-details dd { @apply min-w-0 break-words text-sm; overflow-wrap:anywhere; }
+  .profile-statistics { @apply mt-7 grid grid-cols-2 gap-4; }
+  .profile-statistics span { @apply block text-xs text-muted; }
+  .profile-statistics strong { @apply mt-3 block text-2xl font-normal; }
+  .result-detail-empty { @apply flex min-h-64 flex-wrap items-center gap-5 border-y border-border py-8; }
+  .result-detail-empty > p { @apply w-full text-sm text-muted; }
+}

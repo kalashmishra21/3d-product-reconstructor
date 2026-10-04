@@ -36,7 +36,7 @@ export function ExportPanel({ mesh, objectName, sourceFilename }) {
 
   return <section className="recon-export" aria-labelledby="recon-export-title">
     <div className="recon-export-heading">
-      <div><p className="recon-eyebrow">04 / ASSET DELIVERY</p><h3 id="recon-export-title">Export mesh.</h3></div>
+      <div><p className="recon-eyebrow">04 / ASSET DELIVERY</p><h3 id="recon-export-title">Export mesh</h3></div>
       <span>{valid ? 'RAW STAGE-3 GEOMETRY' : 'EXPORT UNAVAILABLE'}</span>
     </div>
     {!valid && <p className="recon-inline-error" role="alert">EXPORT UNAVAILABLE — Mesh data failed validation.</p>}
@@ -46,7 +46,7 @@ export function ExportPanel({ mesh, objectName, sourceFilename }) {
         <span className="recon-export-meta">{sizes.obj ? formatBytes(sizes.obj) : '.OBJ'} ↗</span>
       </button>
       <button type="button" disabled={!valid || Boolean(busy)} onClick={() => download('glb')}>
-        <span><strong>{busy === 'glb' ? 'Preparing GLB' : 'Download GLB'}</strong><small>Binary glTF · Neutral 3D asset</small></span>
+        <span><strong>{busy === 'glb' ? 'Preparing GLB' : 'Download GLB'}</strong><small>Viewer-ready binary asset · Neutral material</small></span>
         <span className="recon-export-meta">{sizes.glb ? formatBytes(sizes.glb) : '.GLB'} ↗</span>
       </button>
     </div>
