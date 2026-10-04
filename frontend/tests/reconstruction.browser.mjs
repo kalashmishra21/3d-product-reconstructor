@@ -13,6 +13,12 @@ let serial = 0
 let authenticated = true
 let preflightStatus = 200
 let requests = 0
+const mockMesh = JSON.stringify({
+  status: 'complete', model: 'Pixel2Mesh', stage: 3,
+  vertices_count: 2466, faces_count: 4928, latency_ms: 981.4,
+  vertices: Array.from({ length: 2466 }, () => [0, 0, 0]),
+  faces: Array.from({ length: 4928 }, () => [0, 1, 2]),
+})
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const id = ++serial
@@ -46,7 +52,7 @@ socket.addEventListener('message', (event) => {
       requests += 1
       if (request.headers.Authorization !== 'Bearer browser-test-token') errors.push('Missing test bearer token')
     }
-    const body = auth ? mockAuth() : preflightStatus === 200
+    const body = auth ? mockAuth() : path === '/api/v1/reconstructions/infer' ? mockMesh : preflightStatus === 200
       ? JSON.stringify({ status: 'ready', filename: 'sample.png', content_type: 'image/png', format: 'PNG', width: 8, height: 8, size_bytes: 96, user_id: 'browser-test-user' })
       : JSON.stringify({ detail: 'test failure' })
     send('Fetch.fulfillRequest', { requestId, responseCode: auth ? 200 : preflightStatus, responseHeaders: [{ name: 'Content-Type', value: auth ? 'text/javascript' : 'application/json' }], body: Buffer.from(body).toString('base64') }).catch((error) => errors.push(error.message))
@@ -69,6 +75,7 @@ try {
   await send('Fetch.enable', { patterns: [
     { urlPattern: `${origin}/src/lib/auth.js*` },
     { urlPattern: `${origin}/api/v1/reconstructions/preflight*` },
+    { urlPattern: `${origin}/api/v1/reconstructions/infer*` },
   ] })
   await viewport(1440)
   await visit('/', '.site-wrap')
@@ -81,7 +88,7 @@ try {
   await evaluate("document.querySelector('.dash-command .button').click()")
   await until("location.pathname === '/reconstruct' && !!document.querySelector('.recon-page')")
   await until("!!document.querySelector('.recon-scene canvas')")
-  assert.equal(await evaluate("document.body.innerText.includes('No mesh is generated at this step.')"), true)
+  assert.equal(await evaluate("document.body.innerText.includes('Preflight checks the image only.')"), true)
   for (const width of [1440, 1024, 768, 390, 320]) {
     await viewport(width); await delay(400)
     assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `No overflow at ${width}`)
@@ -108,8 +115,24 @@ try {
   const readyShot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true })
   await writeFile(new URL('../.review/reconstruct-ready.png', import.meta.url), Buffer.from(readyShot.data, 'base64'))
   assert.equal(requests, 1)
-  assert.equal(await evaluate("Array.from(document.querySelectorAll('.recon-pipeline li')).map(e => e.className).join('|')"), 'is-complete|is-complete|is-future|is-future')
+  assert.equal(await evaluate("Array.from(document.querySelectorAll('.recon-pipeline li')).map(e => e.className).join('|')"), 'is-complete|is-complete|is-current|is-future')
   assert.equal(await evaluate("document.body.innerText.includes('browser-test-token')"), false)
+  await evaluate("document.querySelector('.recon-infer').click()")
+  await until("!!document.querySelector('.recon-mesh-result')")
+  assert.equal(requests, 2)
+  assert.equal(await evaluate("document.querySelector('.recon-mesh-result').textContent.includes('2,466')"), true)
+  assert.equal(await evaluate("Array.from(document.querySelectorAll('.recon-pipeline li')).map(e => e.className).join('|')"), 'is-complete|is-complete|is-complete|is-future')
+  assert.equal(await evaluate("document.body.innerText.includes('browser-test-token')"), false)
+  await evaluate("document.querySelector('.result-mode-group button:nth-child(2)').click()")
+  assert.equal(await evaluate("document.querySelector('.result-mode-group button:nth-child(2)').classList.contains('is-active')"), true)
+  await evaluate("document.querySelector('.result-mode-group button:nth-child(3)').click()")
+  assert.equal(await evaluate("document.querySelector('.result-mode-group button:nth-child(3)').getAttribute('aria-pressed')"), 'true')
+  await evaluate("document.querySelector('.result-mode-group button:nth-child(4)').click()")
+  await until("document.querySelector('.recon-view-panel h2')?.textContent === 'Input inspection'")
+  await evaluate("document.querySelector('.result-header-toggle').click()")
+  await until("document.querySelector('.recon-view-panel h2')?.textContent === 'Real Stage-3 mesh'")
+  await evaluate("document.querySelector('.result-fit').click()")
+  assert.equal(await evaluate("document.querySelector('.result-mode-group button:first-child').classList.contains('is-active')"), true)
   await evaluate(`(async () => {
     const canvas = document.createElement('canvas'); canvas.width = 12; canvas.height = 9;
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));

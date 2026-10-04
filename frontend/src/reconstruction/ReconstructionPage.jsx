@@ -7,8 +7,11 @@ import { dashboardProfile } from '../dashboard/profile'
 import { useAuth } from '../auth/AuthProvider'
 import { useBackendHealth } from '../lib/useBackendHealth'
 import { preflightErrorMessage, preflightImage } from '../lib/preflight'
+import { inferImage, inferenceErrorMessage } from '../lib/inference'
 import { formatBytes, inspectImageFile } from './image'
 import { InputViewport } from './InputViewport'
+import { ResultViewport } from './ResultViewport'
+import { deriveObjectName, formatMilliseconds } from './mesh'
 import './reconstruction.css'
 
 const steps = ['IMAGE', 'PREFLIGHT', 'MESH', 'EXPORT']
@@ -23,10 +26,15 @@ export function ReconstructionPage() {
   const dragDepth = useRef(0)
   const [dragging, setDragging] = useState(false)
   const [selection, setSelection] = useState(null)
+  const [objectName, setObjectName] = useState('')
   const [previewUrl, setPreviewUrl] = useState('')
   const [phase, setPhase] = useState('empty')
   const [error, setError] = useState('')
   const [verified, setVerified] = useState(null)
+  const [mesh, setMesh] = useState(null)
+  const [inferencePhase, setInferencePhase] = useState('idle')
+  const [inferenceError, setInferenceError] = useState('')
+  const [resultView, setResultView] = useState('mesh')
 
   useEffect(() => {
     if (!selection?.file) { setPreviewUrl(''); return }
@@ -43,7 +51,12 @@ export function ReconstructionPage() {
     request.current = null
     if (input.current) input.current.value = ''
     setSelection(null)
+    setObjectName('')
     setVerified(null)
+    setMesh(null)
+    setInferencePhase('idle')
+    setInferenceError('')
+    setResultView('mesh')
     setError('')
     setPhase('empty')
   }
@@ -53,7 +66,12 @@ export function ReconstructionPage() {
     const version = ++selectionVersion.current
     request.current?.abort()
     setSelection(null)
+    setObjectName(deriveObjectName(file.name))
     setVerified(null)
+    setMesh(null)
+    setInferencePhase('idle')
+    setInferenceError('')
+    setResultView('mesh')
     setError('')
     setPhase('checking')
     try {
@@ -90,6 +108,10 @@ export function ReconstructionPage() {
     request.current = controller
     setError('')
     setVerified(null)
+    setMesh(null)
+    setInferencePhase('idle')
+    setInferenceError('')
+    setResultView('mesh')
     setPhase('submitting')
     try {
       const result = await preflightImage(selection.file, { signal: controller.signal })
@@ -100,6 +122,29 @@ export function ReconstructionPage() {
       if (version !== selectionVersion.current || controller.signal.aborted) return
       setError(preflightErrorMessage(failure))
       setPhase('error')
+    } finally {
+      if (request.current === controller) request.current = null
+    }
+  }
+
+  async function runInference() {
+    if (!selection || !verified || inferencePhase === 'running') return
+    const version = selectionVersion.current
+    const controller = new AbortController()
+    request.current = controller
+    setInferenceError('')
+    setMesh(null)
+    setInferencePhase('running')
+    try {
+      const result = await inferImage(selection.file, { signal: controller.signal })
+      if (version !== selectionVersion.current || controller.signal.aborted) return
+      setMesh(result)
+      setResultView('mesh')
+      setInferencePhase('complete')
+    } catch (failure) {
+      if (version !== selectionVersion.current || controller.signal.aborted) return
+      setInferenceError(inferenceErrorMessage(failure))
+      setInferencePhase('error')
     } finally {
       if (request.current === controller) request.current = null
     }
@@ -140,26 +185,41 @@ export function ReconstructionPage() {
           {error && <p className="recon-inline-error" role="alert">{error}</p>}
           {selection && <div className="recon-selection" aria-label="Selected image metadata">
             <div className="recon-selection-head"><span>LOCAL IMAGE</span><button type="button" onClick={reset}>Clear image</button></div>
+            <label className="recon-object-field">OBJECT NAME<input type="text" value={objectName} onChange={(event) => setObjectName(event.target.value)} placeholder="Name this object" maxLength={80} /></label>
+            <span className="recon-source-label">SOURCE FILE</span>
             <strong title={selection.file.name}>{selection.file.name}</strong>
             <dl><div><dt>Format</dt><dd>{selection.format}</dd></div><div><dt>Size</dt><dd>{formatBytes(selection.file.size)}</dd></div><div><dt>Resolution</dt><dd>{selection.width} × {selection.height}</dd></div></dl>
           </div>}
 
-          <button className="recon-submit" type="button" onClick={runPreflight} disabled={!selection || phase === 'submitting'}>
+          <button className="recon-submit" type="button" onClick={runPreflight} disabled={!selection || phase === 'submitting' || inferencePhase === 'running'}>
             <span>{phase === 'submitting' ? 'VERIFYING INPUT…' : phase === 'ready' ? 'VERIFY AGAIN' : 'RUN PREFLIGHT'}</span><Arrow diagonal />
           </button>
-          <p className="recon-submit-note">No mesh is generated at this step. Your image is checked in memory and is not saved.</p>
+          <p className="recon-submit-note">Preflight checks the image only. The model runs when you choose Reconstruct Mesh.</p>
 
           {verified && <div className="recon-ready" role="status" aria-live="polite">
             <p><span className="recon-ready-dot" />INPUT VERIFIED</p>
-            <strong>Ready for reconstruction.</strong>
+            <strong>{objectName || 'Ready for reconstruction.'}</strong>
             <span>{verified.width} × {verified.height} <i /> {verified.format} <i /> {formatBytes(verified.size_bytes)}</span>
-            <small>Mesh generation will be available in a later stage.</small>
+            <small>Preflight passed. Run the trained model to produce a final Stage-3 mesh.</small>
+          </div>}
+
+          {verified && <button className="recon-infer" type="button" onClick={runInference} disabled={inferencePhase === 'running'}>
+            <span>{inferencePhase === 'running' ? 'MODEL INFERENCE IN PROGRESS...' : mesh ? 'RECONSTRUCT AGAIN' : 'RECONSTRUCT MESH'}</span><Arrow diagonal />
+          </button>}
+          {inferencePhase === 'running' && <p className="recon-infer-note" role="status">Running the trained Pixel2Mesh model. The input preview remains visible; this is not a live mesh preview.</p>}
+          {inferenceError && <p className="recon-inline-error" role="alert">{inferenceError}</p>}
+          {mesh && <div className="recon-mesh-result" role="status" aria-live="polite">
+            <p className="recon-eyebrow">MESH GENERATED / REAL MODEL OUTPUT</p>
+            <strong>{objectName || 'Untitled object'} <span>— Stage 03 generated</span></strong>
+            <dl><div><dt>Model</dt><dd>{mesh.model}</dd></div><div><dt>Vertices</dt><dd>{mesh.vertices_count.toLocaleString()}</dd></div><div><dt>Faces</dt><dd>{mesh.faces_count.toLocaleString()}</dd></div><div><dt>Inference</dt><dd>{mesh.latency_ms.toLocaleString()} ms</dd></div></dl>
+            <div className="recon-timing"><span>Model load <b>{mesh.model_init_ms > 0 ? formatMilliseconds(mesh.model_init_ms) : 'READY / REUSED'}</b></span><span>Total request <b>{formatMilliseconds(mesh.total_ms)}</b></span></div>
+            <small>The real Stage-3 mesh is shown at right. OBJ/GLB export comes in a later stage.</small>
           </div>}
         </section>
 
-        <section className="recon-view-panel" aria-labelledby="recon-view-title">
-          <div className="recon-view-header"><div><p className="recon-eyebrow">SPATIAL INPUT STAGE / 001</p><h2 id="recon-view-title">Input inspection</h2></div><span className="recon-live-label">{phase === 'ready' ? 'PREFLIGHT READY' : selection ? 'IMAGE LOADED' : 'AWAITING IMAGE'}</span></div>
-          <InputViewport previewUrl={previewUrl} width={selection?.width} height={selection?.height} scanning={phase === 'submitting'} />
+        <section className={'recon-view-panel' + (mesh && resultView === 'mesh' ? ' is-result' : '')} aria-labelledby="recon-view-title">
+          <div className="recon-view-header"><div><p className="recon-eyebrow">{mesh && resultView === 'mesh' ? 'REAL MODEL OUTPUT / 003' : 'SPATIAL INPUT STAGE / 001'}</p><h2 id="recon-view-title">{mesh && resultView === 'mesh' ? 'Real Stage-3 mesh' : 'Input inspection'}</h2></div><div className="recon-view-header-end">{mesh && resultView === 'input' && <button type="button" className="result-header-toggle" onClick={() => setResultView('mesh')}>View mesh</button>}<span className="recon-live-label">{inferencePhase === 'running' ? 'MODEL INFERENCE' : mesh && resultView === 'mesh' ? 'MESH GENERATED' : phase === 'ready' ? 'PREFLIGHT READY' : selection ? 'IMAGE LOADED' : 'AWAITING IMAGE'}</span></div></div>
+          {mesh && resultView === 'mesh' ? <ResultViewport mesh={mesh} objectName={objectName} onInput={() => setResultView('input')} /> : <InputViewport previewUrl={previewUrl} width={selection?.width} height={selection?.height} scanning={phase === 'submitting' || inferencePhase === 'running'} />}
           <div className="recon-view-foot"><span>{selection ? 'ACTUAL INPUT IMAGE / 2D PLANE' : 'PROCEDURAL SPATIAL GUIDE'}</span><span>{selection ? 'PREVIEW ONLY — NOT A RECONSTRUCTED MESH' : 'ILLUSTRATIVE — NOT MODEL OUTPUT'}</span></div>
         </section>
       </div>
@@ -167,8 +227,8 @@ export function ReconstructionPage() {
       <nav className="recon-pipeline" aria-label="Reconstruction pipeline">
         <p className="recon-eyebrow">PROCESS / FOUR STAGES</p>
         <ol>{steps.map((step, index) => {
-          const complete = index === 0 ? Boolean(selection) : index === 1 ? Boolean(verified) : false
-          const current = index === 0 ? !selection : index === 1 && Boolean(selection) && !verified
+          const complete = index === 0 ? Boolean(selection) : index === 1 ? Boolean(verified) : index === 2 ? Boolean(mesh) : false
+          const current = index === 0 ? !selection : index === 1 ? Boolean(selection) && !verified : index === 2 && Boolean(verified) && !mesh
           return <li key={step} className={complete ? 'is-complete' : current ? 'is-current' : 'is-future'}><span>0{index + 1}</span><strong>{step}</strong><small>{complete ? 'COMPLETE' : current ? 'CURRENT' : 'FUTURE'}</small></li>
         })}</ol>
       </nav>
