@@ -47,6 +47,9 @@
   .recon-selection { @apply mt-5 border-t border-[#52614e] pt-4; }
   .recon-selection-head { @apply flex items-center justify-between gap-3 font-mono text-[9px] tracking-[.12em] text-olive; }
   .recon-selection-head button { @apply min-h-11 border-b border-[#9aa88b] bg-transparent text-[10px] normal-case tracking-normal text-ivory hover:text-olive; }
+  .recon-object-field { @apply mt-5 block font-mono text-[9px] tracking-[.12em] text-[#abb7a1]; }
+  .recon-object-field input { @apply mt-2 block min-h-11 w-full border-b border-[#718267] bg-transparent px-0 text-[14px] font-sans tracking-normal text-ivory outline-none placeholder:text-[#879781] focus:border-olive; }
+  .recon-source-label { @apply mt-4 block font-mono text-[9px] tracking-[.12em] text-[#abb7a1]; }
   .recon-selection > strong { @apply mt-2 block truncate text-[13px] font-medium; }
   .recon-selection dl { @apply mt-5 grid grid-cols-3 gap-2; }
   .recon-selection dl div { @apply min-w-0 border-l border-[#5d6d55] pl-3; }
@@ -62,8 +65,22 @@
   .recon-ready > span { @apply mt-2 flex items-center gap-2 font-mono text-[10px] text-[#e0e8d3]; }
   .recon-ready i { @apply size-0.75 rounded-full bg-[#a9b89b]; }
   .recon-ready small { @apply mt-3 block text-[10px] text-[#b4c1ab]; }
+  .recon-infer { @apply mt-4 flex min-h-13 w-full items-center justify-between gap-4 border border-olive bg-[#d1dda9] px-5 text-left text-[11px] font-bold tracking-[.1em] text-[#20291d] transition-colors enabled:hover:bg-[#e5edc4] disabled:cursor-wait disabled:opacity-65; }
+  .recon-infer svg { @apply size-4 shrink-0; }
+  .recon-infer-note { @apply mt-3 border-l border-olive pl-3 text-[11px] leading-relaxed text-[#cfdbc1]; }
+  .recon-mesh-result { @apply mt-5 border border-[#8da575] bg-[#263a28] px-5 py-5; }
+  .recon-mesh-result > strong { @apply mt-3 block text-2xl tracking-[-.04em]; }
+  .recon-mesh-result > strong span { @apply block text-base font-normal tracking-[-.02em] text-olive; }
+  .recon-mesh-result dl { @apply mt-5 grid grid-cols-2 gap-4 border-t border-[#607555] pt-4; }
+  .recon-mesh-result dt { @apply font-mono text-[9px] uppercase tracking-[.14em] text-[#b5c7a5]; }
+  .recon-mesh-result dd { @apply mt-1 text-[15px] font-medium text-ivory; }
+  .recon-mesh-result small { @apply mt-5 block text-[10px] leading-relaxed text-[#b5c7a5]; }
+  .recon-timing { @apply mt-4 grid grid-cols-2 gap-3 border-t border-[#607555] pt-3 font-mono text-[8px] uppercase tracking-[.1em] text-[#b5c7a5]; }
+  .recon-timing b { @apply mt-1 block text-[10px] font-normal tracking-normal text-ivory; }
   .recon-view-panel { @apply relative flex min-w-0 flex-col bg-[#222c21]; }
   .recon-view-header { @apply flex items-start justify-between gap-4 px-5 pt-6 sm:px-7 sm:pt-8; }
+  .recon-view-header-end { @apply flex shrink-0 items-center gap-3; }
+  .result-header-toggle { @apply min-h-9 border-b border-olive px-1 font-mono text-[8px] tracking-[.1em] text-olive hover:text-ivory; }
   .recon-view-header h2 { @apply mt-2 text-[23px] tracking-[-.04em] sm:text-[29px]; }
   .recon-live-label { @apply shrink-0 border border-[#788c6b] px-2 py-1.5 font-mono text-[8px] tracking-[.1em] text-olive; }
   .recon-viewport { @apply relative min-h-75 flex-1 overflow-hidden sm:min-h-90 lg:min-h-120; background: radial-gradient(ellipse at 51% 42%, #3a4a35 0%, #29372a 46%, #202a21 82%); }
@@ -80,6 +97,19 @@
   .recon-axis span:first-child { @apply absolute -top-3 -right-1; }
   .recon-axis span:last-child { @apply absolute -right-3 -bottom-1; }
   .recon-view-foot { @apply flex flex-wrap justify-between gap-2 border-t border-[#54634b] px-5 py-4 font-mono text-[8px] tracking-[.1em] text-[#bdcdb2] sm:px-7; }
+  .recon-view-panel.is-result .recon-view-foot span { font-size: 0; }
+  .recon-view-panel.is-result .recon-view-foot span:first-child::after { content: 'ACTUAL STAGE-3 GEOMETRY / 3D MESH'; font-size: 8px; }
+  .recon-view-panel.is-result .recon-view-foot span:last-child::after { content: '2466 VERTICES / 4928 FACES'; font-size: 8px; }
+  .result-view-wrap { @apply flex min-h-75 flex-1 flex-col sm:min-h-90 lg:min-h-120; }
+  .result-view-tools { @apply flex flex-wrap items-center justify-between gap-3 border-b border-[#54634b] px-5 py-3 sm:px-7; }
+  .result-mode-group { @apply flex flex-wrap gap-1; }
+  .result-mode-group button, .result-fit { @apply min-h-10 border border-[#617354] px-3 font-mono text-[8px] uppercase tracking-[.1em] text-[#cbd7bd] transition-colors hover:border-olive hover:text-olive focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-olive; }
+  .result-mode-group button.is-active { @apply border-olive bg-[#c9d8a7] text-[#20291d]; }
+  .result-fit { @apply border-transparent text-olive; }
+  .result-stage-canvas { @apply relative min-h-70 flex-1 overflow-hidden; background: radial-gradient(ellipse at 50% 42%, #3a4a35 0%, #29372a 48%, #202a21 88%); }
+  .result-stage-canvas canvas { @apply block; }
+  .result-static-state { @apply grid min-h-70 place-items-center font-mono text-[9px] tracking-[.15em] text-olive; }
+  .result-view-caption { @apply flex flex-wrap justify-between gap-2 border-t border-[#54634b] px-5 py-3 font-mono text-[8px] tracking-[.1em] text-[#bdcdb2] sm:px-7; }
   .recon-pipeline { @apply mt-8 border-t border-[#596750] pt-6; }
   .recon-pipeline ol { @apply mt-5 grid list-none grid-cols-2 gap-px bg-[#485645] p-0 md:grid-cols-4; }
   .recon-pipeline li { @apply flex min-w-0 flex-col gap-2 bg-[#202820] px-4 py-5 sm:px-6; }
@@ -91,6 +121,10 @@
   .recon-pipeline li.is-current { @apply border-t-2 border-[#a2b896]; }
   .recon-pipeline li.is-future { @apply opacity-55; }
   .recon-footer { @apply mt-11 flex flex-wrap justify-between gap-3 border-t border-[#495545] py-6 font-mono text-[9px] tracking-[.1em] text-[#aab8a1]; }
+}
+
+@media (min-width: 1024px) {
+  .recon-view-panel { align-self: start; height: min(82vh, 820px); min-height: 680px; }
 }
 
 @media (max-width: 639px) {
