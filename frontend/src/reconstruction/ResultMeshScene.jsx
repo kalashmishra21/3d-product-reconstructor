@@ -1,19 +1,14 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { BufferGeometry, Float32BufferAttribute, Vector3 } from 'three'
+import { Vector3 } from 'three'
+import { createRawStage3Geometry } from './geometry.js'
 
 function RealMesh({ mesh, mode, fitVersion }) {
   const { invalidate } = useThree()
   const controls = useRef(null)
   const geometry = useMemo(() => {
-    const result = new BufferGeometry()
-    const positions = new Float32Array(mesh.vertices.flat())
-    const indices = mesh.faces.flat()
-    result.setAttribute('position', new Float32BufferAttribute(positions, 3))
-    result.setIndex(indices)
-    result.computeVertexNormals()
-    result.computeBoundingBox()
+    const result = createRawStage3Geometry(mesh)
     const center = new Vector3()
     const size = new Vector3()
     result.boundingBox?.getCenter(center)

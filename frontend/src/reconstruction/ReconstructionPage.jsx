@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Arrow, Mark } from '../components/Icons'
 import { BackendStatus } from '../components/BackendStatus'
@@ -11,7 +11,8 @@ import { inferImage, inferenceErrorMessage } from '../lib/inference'
 import { formatBytes, inspectImageFile } from './image'
 import { InputViewport } from './InputViewport'
 import { ResultViewport } from './ResultViewport'
-import { deriveObjectName, formatMilliseconds } from './mesh'
+import { ExportPanel } from './ExportPanel'
+import { deriveObjectName, formatMilliseconds, validateMeshResponse } from './mesh'
 import './reconstruction.css'
 
 const steps = ['IMAGE', 'PREFLIGHT', 'MESH', 'EXPORT']
@@ -35,6 +36,7 @@ export function ReconstructionPage() {
   const [inferencePhase, setInferencePhase] = useState('idle')
   const [inferenceError, setInferenceError] = useState('')
   const [resultView, setResultView] = useState('mesh')
+  const exportAvailable = useMemo(() => Boolean(mesh) && !validateMeshResponse(mesh), [mesh])
 
   useEffect(() => {
     if (!selection?.file) { setPreviewUrl(''); return }
@@ -213,8 +215,9 @@ export function ReconstructionPage() {
             <strong>{objectName || 'Untitled object'} <span>— Stage 03 generated</span></strong>
             <dl><div><dt>Model</dt><dd>{mesh.model}</dd></div><div><dt>Vertices</dt><dd>{mesh.vertices_count.toLocaleString()}</dd></div><div><dt>Faces</dt><dd>{mesh.faces_count.toLocaleString()}</dd></div><div><dt>Inference</dt><dd>{mesh.latency_ms.toLocaleString()} ms</dd></div></dl>
             <div className="recon-timing"><span>Model load <b>{mesh.model_init_ms > 0 ? formatMilliseconds(mesh.model_init_ms) : 'READY / REUSED'}</b></span><span>Total request <b>{formatMilliseconds(mesh.total_ms)}</b></span></div>
-            <small>The real Stage-3 mesh is shown at right. OBJ/GLB export comes in a later stage.</small>
+            <small>The real Stage-3 mesh is shown at right. Raw OBJ and GLB assets are available below.</small>
           </div>}
+          {mesh && <ExportPanel mesh={mesh} objectName={objectName} sourceFilename={selection?.file.name} />}
         </section>
 
         <section className={'recon-view-panel' + (mesh && resultView === 'mesh' ? ' is-result' : '')} aria-labelledby="recon-view-title">
@@ -227,9 +230,9 @@ export function ReconstructionPage() {
       <nav className="recon-pipeline" aria-label="Reconstruction pipeline">
         <p className="recon-eyebrow">PROCESS / FOUR STAGES</p>
         <ol>{steps.map((step, index) => {
-          const complete = index === 0 ? Boolean(selection) : index === 1 ? Boolean(verified) : index === 2 ? Boolean(mesh) : false
+          const complete = index === 0 ? Boolean(selection) : index === 1 ? Boolean(verified) : index === 2 ? Boolean(mesh) : exportAvailable
           const current = index === 0 ? !selection : index === 1 ? Boolean(selection) && !verified : index === 2 && Boolean(verified) && !mesh
-          return <li key={step} className={complete ? 'is-complete' : current ? 'is-current' : 'is-future'}><span>0{index + 1}</span><strong>{step}</strong><small>{complete ? 'COMPLETE' : current ? 'CURRENT' : 'FUTURE'}</small></li>
+          return <li key={step} className={complete ? 'is-complete' : current ? 'is-current' : 'is-future'}><span>0{index + 1}</span><strong>{step}</strong><small>{index === 3 && complete ? 'AVAILABLE' : complete ? 'COMPLETE' : current ? 'CURRENT' : 'FUTURE'}</small></li>
         })}</ol>
       </nav>
       <footer className="recon-footer"><span>RECONSTRUCT / IMAGE TO FORM</span><span>Signed in as {profile.label}</span></footer>

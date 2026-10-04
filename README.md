@@ -4,9 +4,9 @@ A single-image 3D reconstruction project built around a trained Pixel2Mesh model
 
 ## Current flow
 
-`Email / Google sign-in → protected dashboard → image validation → authenticated preflight → Pixel2Mesh inference → real Stage-3 geometry → interactive 3D viewer`
+`Email / Google sign-in → protected dashboard → image validation → authenticated preflight → Pixel2Mesh inference → real Stage-3 geometry → interactive 3D viewer → OBJ / GLB download`
 
-The workspace accepts one JPEG, PNG, or WebP image (up to 10 MB). Users can name the object while keeping the source filename visible; generic filenames are not treated as object labels. After preflight, a persistent CPU worker runs the trained model and returns the final mesh. The Three.js viewer supports **Solid**, **Wireframe**, **Vertices**, and **Input** comparison, with orbit, zoom, and Reset / Fit controls.
+The workspace accepts one JPEG, PNG, or WebP image (up to 10 MB). Users can name the object while keeping the source filename visible; generic filenames are not treated as object labels. After preflight, a persistent CPU worker runs the trained model and returns the final mesh. The Three.js viewer supports **Solid**, **Wireframe**, **Vertices**, and **Input** comparison, with orbit, zoom, and Reset / Fit controls. Users can download the raw Stage-3 mesh as Wavefront OBJ or binary glTF (GLB) using a safe object-based filename. Downloads reuse the inference result; viewer transforms do not alter export coordinates. The GLB has a neutral material, not a fabricated photo texture.
 
 ## Preview
 
@@ -18,9 +18,9 @@ The workspace accepts one JPEG, PNG, or WebP image (up to 10 MB). Users can name
 | --- | --- |
 | ![Protected dashboard](assets/readme/dashboard.png) | ![Image input and preflight workspace](assets/readme/reconstruction.png) |
 
-**Real Stage-3 result viewer**
+**Real Stage-3 result viewer and export**
 
-![Actual Pixel2Mesh mesh in the authenticated result viewer](assets/readme/result-viewer.png)
+![Actual Pixel2Mesh mesh, viewer controls, and OBJ/GLB export](assets/readme/result-viewer.png)
 
 ## Stack and layout
 
@@ -68,4 +68,4 @@ Test-set metrics: Chamfer Distance **0.037181**, F1 @ τ **0.000640**, and F1 @ 
 
 ## Next
 
-OBJ/GLB export, reconstruction persistence/history, and deployment remain to be built. The current viewer uses real Stage-3 geometry; it does not yet create downloadable model files or save reconstructions.
+Reconstruction persistence/history, a Supabase storage strategy, and deployment remain to be built. Downloads are local to the current browser session; reconstructions are not yet saved.
