@@ -2,8 +2,10 @@
 // Intercepts auth and preflight only in this isolated browser tab.
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 
 const origin = 'http://127.0.0.1:5173'
+const downloadDirectory = new URL('../.review/stage9-browser/', import.meta.url)
 const target = await (await fetch('http://127.0.0.1:9224/json/new?about:blank', { method: 'PUT' })).json()
 const socket = new WebSocket(target.webSocketDebuggerUrl)
 await new Promise((resolve, reject) => { socket.addEventListener('open', resolve, { once: true }); socket.addEventListener('error', reject, { once: true }) })
@@ -70,8 +72,10 @@ const until = async (expression) => {
 const visit = async (path, selector) => { await send('Page.navigate', { url: origin + path }); await until(`!!document.querySelector('${selector}')`) }
 const viewport = (width) => send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: false })
 await mkdir(new URL('../.review/', import.meta.url), { recursive: true })
+await mkdir(downloadDirectory, { recursive: true })
 try {
   await send('Page.enable'); await send('Runtime.enable')
+  await send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: fileURLToPath(downloadDirectory) })
   await send('Fetch.enable', { patterns: [
     { urlPattern: `${origin}/src/lib/auth.js*` },
     { urlPattern: `${origin}/api/v1/reconstructions/preflight*` },
@@ -88,6 +92,7 @@ try {
   await evaluate("document.querySelector('.dash-command .button').click()")
   await until("location.pathname === '/reconstruct' && !!document.querySelector('.recon-page')")
   await until("!!document.querySelector('.recon-scene canvas')")
+  assert.equal(await evaluate("!!document.querySelector('.recon-export')"), false)
   assert.equal(await evaluate("document.body.innerText.includes('Preflight checks the image only.')"), true)
   for (const width of [1440, 1024, 768, 390, 320]) {
     await viewport(width); await delay(400)
@@ -109,19 +114,51 @@ try {
     input.dispatchEvent(new Event('change', {bubbles:true}));
   })()`)
   await until("document.querySelector('.recon-selection')?.textContent.includes('sample.png')")
+  await evaluate(`(() => {
+    const input = document.querySelector('.recon-object-field input');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(input, 'Whiteboard');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    window.__downloadNames = [];
+    const originalClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () {
+      if (this.download) window.__downloadNames.push(this.download);
+      return originalClick.call(this);
+    };
+  })()`)
   assert.equal(await evaluate("document.querySelector('.recon-selection').textContent.includes('8 × 8')"), true)
   await evaluate("document.querySelector('.recon-submit').click()")
   await until("!!document.querySelector('.recon-ready')")
   const readyShot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true })
   await writeFile(new URL('../.review/reconstruct-ready.png', import.meta.url), Buffer.from(readyShot.data, 'base64'))
   assert.equal(requests, 1)
+  assert.equal(await evaluate("!!document.querySelector('.recon-export')"), false)
   assert.equal(await evaluate("Array.from(document.querySelectorAll('.recon-pipeline li')).map(e => e.className).join('|')"), 'is-complete|is-complete|is-current|is-future')
   assert.equal(await evaluate("document.body.innerText.includes('browser-test-token')"), false)
   await evaluate("document.querySelector('.recon-infer').click()")
   await until("!!document.querySelector('.recon-mesh-result')")
   assert.equal(requests, 2)
   assert.equal(await evaluate("document.querySelector('.recon-mesh-result').textContent.includes('2,466')"), true)
-  assert.equal(await evaluate("Array.from(document.querySelectorAll('.recon-pipeline li')).map(e => e.className).join('|')"), 'is-complete|is-complete|is-complete|is-future')
+  assert.equal(await evaluate("Array.from(document.querySelectorAll('.recon-pipeline li')).map(e => e.className).join('|')"), 'is-complete|is-complete|is-complete|is-complete')
+  await until("!!document.querySelector('.recon-export')")
+  assert.equal(await evaluate("document.querySelector('.recon-pipeline li:last-child small').textContent"), 'AVAILABLE')
+  for (const width of [1440, 1024, 768, 390, 320]) {
+    await viewport(width); await delay(250)
+    assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `No result overflow at ${width}`)
+    assert.equal(await evaluate("document.querySelector('.recon-export-actions button').getBoundingClientRect().width > 100"), true)
+  }
+  await viewport(1440)
+  await evaluate("document.querySelector('.recon-export-actions button:first-child').click()")
+  try {
+    await until("window.__downloadNames?.includes('whiteboard-stage3.obj')")
+  } catch (error) {
+    console.log('OBJ_EXPORT_DIAGNOSTIC', await evaluate("({ names: window.__downloadNames, status: document.querySelector('.recon-export-status')?.textContent, disabled: document.querySelector('.recon-export-actions button:first-child')?.disabled })"))
+    throw error
+  }
+  await evaluate("document.querySelector('.recon-export-actions button:last-child').click()")
+  await until("window.__downloadNames?.includes('whiteboard-stage3.glb')")
+  assert.equal(requests, 2, 'Export must not send another inference request')
+  assert.deepEqual(await evaluate('window.__downloadNames'), ['whiteboard-stage3.obj', 'whiteboard-stage3.glb'])
   assert.equal(await evaluate("document.body.innerText.includes('browser-test-token')"), false)
   await evaluate("document.querySelector('.result-mode-group button:nth-child(2)').click()")
   assert.equal(await evaluate("document.querySelector('.result-mode-group button:nth-child(2)').classList.contains('is-active')"), true)
@@ -143,6 +180,7 @@ try {
   })()`)
   await until("document.querySelector('.recon-selection')?.textContent.includes('replacement.png')")
   assert.equal(await evaluate("!!document.querySelector('.recon-ready')"), false)
+  assert.equal(await evaluate("!!document.querySelector('.recon-export')"), false)
   preflightStatus = 413
   await evaluate("document.querySelector('.recon-submit').click()")
   await until("!!document.querySelector('.recon-inline-error')")
