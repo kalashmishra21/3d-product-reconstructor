@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { createReconstruction, patchReconstruction } from '../lib/reconstructions.js'
+import { createReconstruction, patchReconstruction, renameReconstruction } from '../lib/reconstructions.js'
 import { uploadArtifactSet, uploadSource } from '../lib/storage.js'
 import { inferImage } from '../lib/inference.js'
 import { preflightErrorMessage, preflightImage } from '../lib/preflight.js'
@@ -64,6 +64,11 @@ export function ReconstructionJobProvider({ userId, children }) {
   }, [releasePreview])
 
   const setObjectName = useCallback((value) => dispatch({ type: 'object_name', runId: version.current, value: value.slice(0, 80) }), [])
+  const saveObjectName = useCallback(async () => {
+    if (!state.id || !['completed', 'low_volume'].includes(state.phase)) return false
+    await renameReconstruction(state.id, state.objectName)
+    return true
+  }, [state.id, state.phase, state.objectName])
 
   const runPreflight = useCallback(async () => {
     if (!state.selection?.file || active.current) return false
@@ -117,18 +122,22 @@ export function ReconstructionJobProvider({ userId, children }) {
     active.current = true
     const runId = version.current
     const snapshot = { userId, file: state.selection.file, objectName: state.objectName, verified: state.verified }
+    dispatch({ type: 'persisting', runId, mesh: state.mesh, diagnostic: state.diagnostic })
     try {
       return await retrySave(snapshot, state.mesh, state.id, services, {
         onEvent: (event) => { if (runId === version.current) dispatch({ ...event, runId }) },
       })
-    } catch { return null }
+    } catch {
+      dispatch({ type: 'failed', runId, kind: 'persistence', mesh: state.mesh, message: 'Saving is still incomplete. Try again.' })
+      return null
+    }
     finally { active.current = false }
   }, [services, state, userId])
 
   const dismissNotice = useCallback(() => dispatch({ type: 'dismiss_notice', runId: version.current }), [])
-  const value = useMemo(() => ({ state, previewUrl, selectFile, setObjectName, runPreflight,
+  const value = useMemo(() => ({ state, previewUrl, selectFile, setObjectName, saveObjectName, runPreflight,
     startReconstruction, retryPersistence, reset, dismissNotice }),
-  [state, previewUrl, selectFile, setObjectName, runPreflight, startReconstruction, retryPersistence, reset, dismissNotice])
+  [state, previewUrl, selectFile, setObjectName, saveObjectName, runPreflight, startReconstruction, retryPersistence, reset, dismissNotice])
   return <JobContext.Provider value={value}>{children}</JobContext.Provider>
 }
 

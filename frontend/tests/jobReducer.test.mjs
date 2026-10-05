@@ -51,6 +51,23 @@ test('inference failure marks row failed without a placeholder mesh', async () =
   assert.ok(!JSON.stringify(calls.at(-1)).includes('worker trace'))
 })
 
+test('malformed model output is an inference failure and never persists artifacts', async () => {
+  const calls = []
+  const services = {
+    createReconstruction: async () => ({ id: ID }),
+    uploadSource: async () => `${USER}/${ID}/source.png`,
+    patchReconstruction: async (_id, patch) => { calls.push(patch); return patch },
+    inferImage: async () => ({ vertices: [] }),
+    validateMesh: () => 'invalid geometry',
+    serializeArtifactSet: async () => { throw new Error('must not serialize') },
+  }
+  const events = []
+  await assert.rejects(runReconstruction(snapshot, services, { onEvent: (event) => events.push(event) }), /invalid mesh/)
+  assert.equal(calls.at(-1).status, 'failed')
+  assert.equal(events.at(-1).kind, 'inference')
+  assert.equal(events.at(-1).mesh, undefined)
+})
+
 test('row creation failure produces a safe visible failure without inference', async () => {
   const events = []
   let inferCount = 0
@@ -75,4 +92,14 @@ test('retry-save uses existing mesh and row without another inference', async ()
   const result = await retrySave(snapshot, mesh, ID, services, { onEvent() {} })
   assert.equal(result.status, 'low_volume')
   assert.equal(inferenceCount, 0)
+})
+
+test('persistence failure can return to persisting and finish without losing the mesh', () => {
+  const selected = jobReducer(initialJobState, { type: 'selected', runId: 1, selection: { file }, objectName: 'Chair' })
+  const processing = jobReducer(selected, { type: 'processing', runId: 1, id: ID })
+  const saving = jobReducer(processing, { type: 'persisting', runId: 1, mesh })
+  const failed = jobReducer(saving, { type: 'failed', runId: 1, kind: 'persistence', message: 'Retry save', mesh })
+  const retrying = jobReducer(failed, { type: 'persisting', runId: 1, mesh })
+  assert.equal(retrying.phase, 'persisting')
+  assert.equal(jobReducer(retrying, { type: 'completed', runId: 1, mesh }).phase, 'completed')
 })

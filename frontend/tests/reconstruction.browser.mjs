@@ -17,6 +17,8 @@ let authenticated = true
 let preflightStatus = 200
 let requests = 0
 let mockMesh = JSON.stringify(healthyStage3())
+let deferInfer = false
+let pendingInferRequest = null
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const id = ++serial
@@ -26,9 +28,41 @@ const send = (method, params = {}) => new Promise((resolve, reject) => {
 })
 const mockAuth = () => `
   let listener = () => {};
-  const user = ${authenticated ? JSON.stringify({ id: 'browser-test-user', email: 'browser-test@example.invalid', user_metadata: { display_name: 'Browser Test' } }) : 'null'};
+  const user = ${authenticated ? JSON.stringify({ id: '00000000-0000-4000-8000-000000000001', email: 'browser-test@example.invalid', user_metadata: { display_name: 'Browser Test' } }) : 'null'};
+  window.__reconDb = window.__reconDb || { rows: [], uploads: [] };
   export const authConfigured = true;
-  export const supabase = { auth: { onAuthStateChange(callback) { listener = callback; return { data: { subscription: { unsubscribe() {} } } }; } } };
+  export const supabase = {
+    auth: {
+      onAuthStateChange(callback) { listener = callback; return { data: { subscription: { unsubscribe() {} } } }; },
+      async getUser() { return { data: { user }, error: null }; }
+    },
+    from(table) {
+      let action = 'select', values = null;
+      const filters = [];
+      const query = {
+        select() { return this; },
+        eq(key, value) { filters.push([key, value]); return this; },
+        insert(value) { action = 'insert'; values = value; return this; },
+        update(value) { action = 'update'; values = value; return this; },
+        async maybeSingle() {
+          if (table === 'profiles') return { data: { id: user?.id, display_name: 'Browser Test', avatar_path: null }, error: null };
+          if (action === 'insert') {
+            const row = { ...values, id: '00000000-0000-4000-8000-000000000002', created_at: new Date().toISOString() };
+            window.__reconDb.rows.push(row);
+            return { data: row, error: null };
+          }
+          const row = window.__reconDb.rows.find(item => filters.every(([key, value]) => item[key] === value));
+          if (action === 'update' && row) Object.assign(row, values);
+          return { data: row || null, error: null };
+        }
+      };
+      return query;
+    },
+    storage: { from(bucket) { return {
+      async upload(path, blob) { window.__reconDb.uploads.push({ bucket, path, size: blob.size }); return { data: { path }, error: null }; },
+      async createSignedUrl(path) { return { data: { signedUrl: 'blob:browser-test' }, error: null }; }
+    }; } }
+  };
   export async function getCurrentUser() { return user; }
   export async function getCurrentSession() { return user ? { access_token: 'browser-test-token' } : null; }
   export async function signOut() { listener('SIGNED_OUT', null); }
@@ -45,13 +79,18 @@ socket.addEventListener('message', (event) => {
   if (result.method === 'Fetch.requestPaused') {
     const { requestId, request } = result.params
     const path = new URL(request.url).pathname
+    if (path === '/api/v1/reconstructions/infer' && deferInfer) {
+      requests += 1
+      pendingInferRequest = requestId
+      return
+    }
     const auth = path === '/src/lib/auth.js'
     if (!auth) {
       requests += 1
       if (request.headers.Authorization !== 'Bearer browser-test-token') errors.push('Missing test bearer token')
     }
     const body = auth ? mockAuth() : path === '/api/v1/reconstructions/infer' ? mockMesh : preflightStatus === 200
-      ? JSON.stringify({ status: 'ready', filename: 'sample.png', content_type: 'image/png', format: 'PNG', width: 8, height: 8, size_bytes: 96, user_id: 'browser-test-user' })
+      ? JSON.stringify({ status: 'ready', filename: 'sample.png', content_type: 'image/png', format: 'PNG', width: 8, height: 8, size_bytes: 96, user_id: '00000000-0000-4000-8000-000000000001' })
       : JSON.stringify({ detail: 'test failure' })
     send('Fetch.fulfillRequest', { requestId, responseCode: auth ? 200 : preflightStatus, responseHeaders: [{ name: 'Content-Type', value: auth ? 'text/javascript' : 'application/json' }], body: Buffer.from(body).toString('base64') }).catch((error) => errors.push(error.message))
   }
@@ -131,9 +170,23 @@ try {
   assert.equal(await evaluate("!!document.querySelector('.recon-export')"), false)
   assert.equal(await evaluate("Array.from(document.querySelectorAll('.recon-pipeline li')).map(e => e.className).join('|')"), 'is-complete|is-complete|is-current|is-future')
   assert.equal(await evaluate("document.body.innerText.includes('browser-test-token')"), false)
+  deferInfer = true
   await evaluate("document.querySelector('.recon-infer').click()")
-  await until("!!document.querySelector('.recon-mesh-result')")
+  for (let attempt = 0; attempt < 100 && !pendingInferRequest; attempt++) await delay(100)
+  assert.ok(pendingInferRequest, 'one inference request reaches the backend')
+  await evaluate("document.querySelector('a[href=\"/model\"]').click()")
+  await until("location.pathname === '/model'")
+  assert.equal(await evaluate("document.querySelector('.global-job-status').textContent.includes('PROCESSING')"), true, 'inference remains globally active after SPA navigation')
+  deferInfer = false
+  await send('Fetch.fulfillRequest', { requestId: pendingInferRequest, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: 'application/json' }], body: Buffer.from(mockMesh).toString('base64') })
+  pendingInferRequest = null
+  await until("document.querySelector('.global-job-status').textContent.includes('COMPLETED')")
+  await evaluate("document.querySelector('a[href=\"/reconstruct\"]').click()")
+  await until("location.pathname === '/reconstruct' && !!document.querySelector('.recon-mesh-result')")
   assert.equal(requests, 2)
+  assert.equal(await evaluate("window.__reconDb.rows.length"), 1, 'one real persistence row is created')
+  assert.equal(await evaluate("window.__reconDb.rows[0].status"), 'completed')
+  assert.deepEqual(await evaluate("window.__reconDb.uploads.map(item => item.path.split('/').pop())"), ['source.png', 'stage3.json', 'stage3.obj', 'stage3.glb'])
   assert.equal(await evaluate("document.querySelector('.recon-mesh-result').textContent.includes('2,466')"), true)
   assert.equal(await evaluate("Array.from(document.querySelectorAll('.recon-pipeline li')).map(e => e.className).join('|')"), 'is-complete|is-complete|is-complete|is-complete')
   await until("!!document.querySelector('.recon-export')")
@@ -172,6 +225,13 @@ try {
   await until("window.__downloadNames?.includes('whiteboard-stage3.glb')")
   assert.equal(requests, 2, 'Export must not send another inference request')
   assert.deepEqual(await evaluate('window.__downloadNames'), ['whiteboard-stage3.obj', 'whiteboard-stage3.glb'])
+  await evaluate(`(() => {
+    const field = document.querySelector('.recon-object-field input');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, 'Whiteboard Revised');
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`)
+  await evaluate("document.querySelector('.recon-save-name').click()")
+  await until("window.__reconDb.rows[0].object_name === 'Whiteboard Revised'")
   assert.equal(await evaluate("document.body.innerText.includes('browser-test-token')"), false)
   await evaluate("document.querySelector('.result-mode-group button:nth-child(2)').click()")
   assert.equal(await evaluate("document.querySelector('.result-mode-group button:nth-child(2)').classList.contains('is-active')"), true)

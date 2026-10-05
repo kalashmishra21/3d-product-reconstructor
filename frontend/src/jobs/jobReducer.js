@@ -15,10 +15,14 @@ export function jobReducer(state, event) {
   if (event.type === 'object_name') return { ...state, objectName: event.value }
   if (event.type === 'preflighting' && state.selection && !ACTIVE.has(state.phase)) return { ...state, phase: 'preflighting', verified: null, error: '' }
   if (event.type === 'ready' && state.phase === 'preflighting') return { ...state, phase: 'ready', verified: event.verified, error: '' }
-  if (event.type === 'processing' && (state.phase === 'ready' || state.phase === 'selected')) {
-    return { ...state, phase: 'processing', id: event.id, mesh: null, error: '' }
+  if (event.type === 'processing' && (state.phase === 'ready' || state.phase === 'selected' ||
+      (state.verified && ['completed', 'low_volume', 'failed'].includes(state.phase)))) {
+    return { ...state, phase: 'processing', id: event.id, mesh: null, diagnostic: null, error: '', failureKind: '', notice: null }
   }
-  if (event.type === 'persisting' && state.phase === 'processing') return { ...state, phase: 'persisting', mesh: event.mesh, diagnostic: event.diagnostic, error: '' }
+  if (event.type === 'persisting' && (state.phase === 'processing' ||
+      (state.phase === 'failed' && state.failureKind === 'persistence'))) {
+    return { ...state, phase: 'persisting', mesh: event.mesh, diagnostic: event.diagnostic ?? state.diagnostic, error: '', failureKind: '' }
+  }
   if (event.type === 'completed' && ACTIVE.has(state.phase)) return { ...state, phase: 'completed', mesh: event.mesh, diagnostic: event.diagnostic, notice: event.notice ?? null }
   if (event.type === 'low_volume' && ACTIVE.has(state.phase)) return { ...state, phase: 'low_volume', mesh: event.mesh, diagnostic: event.diagnostic, notice: event.notice ?? null }
   if (event.type === 'failed') return { ...state, phase: 'failed', error: event.message, failureKind: event.kind ?? 'unknown', mesh: event.mesh ?? state.mesh }

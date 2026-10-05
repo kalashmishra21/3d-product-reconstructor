@@ -20,8 +20,9 @@ export async function runReconstruction(snapshot, services, { signal, onEvent = 
     const sourcePath = await services.uploadSource(userId, row.id, file)
     await services.patchReconstruction(row.id, { source_path: sourcePath }, { expectedStatus: 'processing' })
     if (signal?.aborted) throw new Error('Reconstruction interrupted')
-    mesh = await services.inferImage(file, { signal })
-    if (services.validateMesh(mesh)) throw new Error('The model returned invalid mesh data')
+    const predicted = await services.inferImage(file, { signal })
+    if (services.validateMesh(predicted)) throw new Error('The model returned invalid mesh data')
+    mesh = predicted
     const diagnostic = services.diagnoseMesh(mesh.vertices)
     onEvent({ type: 'persisting', id: row.id, mesh, diagnostic })
     return await retrySave(snapshot, mesh, row.id, services, { signal, onEvent, diagnostic })
