@@ -26,10 +26,21 @@ const send = (method, params = {}) => new Promise((resolve, reject) => {
 const mockAuth = () => `
   let listener = () => {};
   const user = ${authenticated ? JSON.stringify({ id: 'test-only', email: 'layout-test@example.invalid', user_metadata: { display_name: 'Workspace Test' }, identities: [{ provider: 'google' }], created_at: '2026-01-10T00:00:00Z' }) : 'null'};
-  window.__dashboardTest = { user, logoutCalls: 0, failLogout: false };
+  window.__dashboardTest = { user, logoutCalls: 0, failLogout: false, getUserCalls: 0, profileCalls: 0 };
   export const authConfigured = true;
-  export const supabase = { auth: { onAuthStateChange(callback) { listener = callback; return { data: { subscription: { unsubscribe() {} } } }; } } };
-  export async function getCurrentUser() { return window.__dashboardTest.user; }
+  export const supabase = {
+    auth: {
+      onAuthStateChange(callback) { listener = callback; return { data: { subscription: { unsubscribe() {} } } }; },
+      async getUser() { return { data: { user: window.__dashboardTest.user }, error: null }; },
+    },
+    from(table) {
+      if (table === 'profiles') window.__dashboardTest.profileCalls++;
+      const query = { select() { return this; }, eq() { return this; }, insert() { return this; }, update() { return this; },
+        async maybeSingle() { return { data: { id: user?.id, display_name: 'Workspace Test', avatar_path: null }, error: null }; } };
+      return query;
+    },
+  };
+  export async function getCurrentUser() { window.__dashboardTest.getUserCalls++; return window.__dashboardTest.user; }
   export async function getCurrentSession() { return null; }
   export async function signOut() { window.__dashboardTest.logoutCalls++; if(window.__dashboardTest.failLogout) throw new Error('Test sign-out failed'); window.__dashboardTest.user = null; listener('SIGNED_OUT', null); }
   export async function signInWithEmail() { throw new Error('Not available in layout tests'); }
@@ -68,6 +79,15 @@ await mkdir(new URL('../.review/', import.meta.url), { recursive: true })
 try {
   await send('Page.enable'); await send('Runtime.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
   await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/src/lib/auth.js*` }] })
+  await visit('/dashboard', '.dash-layout')
+  assert.equal(await evaluate("!!document.querySelector('.global-job-status')"), true, 'workspace exposes job status')
+  assert.ok(await evaluate('window.__dashboardTest.profileCalls') > 0, 'persistent profile provider loads own row')
+  const authLoads = await evaluate('window.__dashboardTest.getUserCalls')
+  await evaluate("document.querySelector('a[href=\"/model\"]').click()")
+  await until("location.pathname === '/model' && !!document.querySelector('#model-page-title')")
+  await evaluate("document.querySelector('a[href=\"/profile\"]').click()")
+  await until("location.pathname === '/profile' && !!document.querySelector('#profile-title')")
+  assert.equal(await evaluate('window.__dashboardTest.getUserCalls'), authLoads, 'SPA navigation retains authenticated parent')
   for (const [path, selector] of [['/history','#history-title'], ['/model','#model-page-title'], ['/profile','#profile-title'], ['/reconstructions/not-persisted','#result-detail-title']]) {
     await visit(path, selector)
     assert.equal(await evaluate("document.querySelectorAll('main').length"), 1)

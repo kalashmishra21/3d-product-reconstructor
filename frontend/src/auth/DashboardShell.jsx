@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { signOut } from '../lib/auth'
 import { useAuth } from './AuthProvider'
 import { useBackendHealth } from '../lib/useBackendHealth'
-import { Dashboard } from '../dashboard/Dashboard'
 import { WorkspaceLayout } from '../dashboard/WorkspaceLayout'
 
 export function DashboardShell({ children }) {
@@ -25,5 +24,5 @@ export function DashboardShell({ children }) {
     }
   }
 
-  return <WorkspaceLayout user={user} health={health} pending={pending} error={error} onLogout={logout}>{children ?? <Dashboard />}</WorkspaceLayout>
+  return <WorkspaceLayout user={user} health={health} pending={pending} error={error} onLogout={logout}>{children ?? <Outlet />}</WorkspaceLayout>
 }

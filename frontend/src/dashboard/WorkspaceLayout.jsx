@@ -4,6 +4,7 @@ import { Mark } from '../components/Icons'
 import { BackendStatus } from '../components/BackendStatus'
 import { DashboardIcon as Icon } from './DashboardIcon'
 import { dashboardProfile } from './profile'
+import { GlobalJobStatus } from './GlobalJobStatus.jsx'
 import './dashboard.css'
 
 const WorkspaceContext = createContext(null)
@@ -59,7 +60,7 @@ export function WorkspaceLayout({ user, health, pending, error, onLogout, childr
         <div className="dash-header-copy"><p className="dash-kicker">WORKSPACE <span aria-hidden="true">/</span> {contexts[pathname] || 'Result detail'}</p>
           {pathname === '/dashboard' && <><h1 id="dashboard-title">Welcome back{profile.name ? <>, <span>{profile.name}</span></> : ''}.</h1><p>One image. A new perspective to inspect.</p></>}
         </div>
-        <div className="dash-header-controls"><div className="dash-header-health"><BackendStatus health={health} /></div>
+        <div className="dash-header-controls"><GlobalJobStatus /><div className="dash-header-health"><BackendStatus health={health} /></div>
           <details ref={account} className="dash-profile-menu" onKeyDown={(event) => { if (event.key === 'Escape') { account.current.removeAttribute('open'); account.current.querySelector('summary').focus() } }}>
             <summary aria-label="Account options"><WorkspaceAvatar key={profile.avatar} profile={profile} /><Icon name="chevron" /></summary>
             <div className="dash-profile-popover"><strong>{profile.label}</strong><p>{profile.email}</p><Link to="/profile">Your profile</Link><button disabled={pending} onClick={onLogout}>{pending ? 'Signing out…' : 'Sign out'}</button></div>
