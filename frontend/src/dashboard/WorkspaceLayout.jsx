@@ -4,6 +4,7 @@ import { Mark } from '../components/Icons'
 import { BackendStatus } from '../components/BackendStatus'
 import { DashboardIcon as Icon } from './DashboardIcon'
 import { dashboardProfile } from './profile'
+import { useProfile } from '../profile/ProfileProvider.jsx'
 import { GlobalJobStatus } from './GlobalJobStatus.jsx'
 import './dashboard.css'
 
@@ -35,7 +36,8 @@ function Navigation({ profile, health, pending, onLogout, onNavigate }) {
 }
 export function WorkspaceLayout({ user, health, pending, error, onLogout, children }) {
   const { pathname } = useLocation()
-  const profile = dashboardProfile(user)
+  const { profile: savedProfile } = useProfile()
+  const profile = dashboardProfile(user, savedProfile)
   const drawer = useRef(null)
   const trigger = useRef(null)
   const account = useRef(null)

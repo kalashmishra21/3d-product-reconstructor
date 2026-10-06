@@ -107,6 +107,7 @@ try {
       assert.equal(await evaluate("document.querySelector('.profile-details').textContent.includes('layout-test@example.invalid')"), true)
       assert.equal(await evaluate("document.querySelector('.profile-details').textContent.includes('Google')"), true)
       assert.equal(await evaluate("document.querySelector('.profile-statistics').textContent.includes(String.fromCharCode(8212))"), true)
+      assert.equal(await evaluate("!!document.querySelector('.profile-edit-button')"), true, 'Profile has an editable saved display name')
     }
     for (const width of [1440,1280,1024,768,390,320]) {
       await viewport(width); await delay(180)

@@ -221,6 +221,15 @@
   .profile-details > div { @apply grid gap-2 border-b border-border/60 py-5 sm:grid-cols-[.7fr_1fr]; }
   .profile-details dt { @apply text-sm text-muted; }
   .profile-details dd { @apply min-w-0 break-words text-sm; overflow-wrap:anywhere; }
+  .profile-edit-section { @apply mt-8 border-t border-border/70 pt-7; }
+  .profile-edit-heading { @apply flex flex-wrap items-center justify-between gap-4; }
+  .profile-edit-heading h2 { @apply mt-2 text-xl font-medium tracking-tight; }
+  .profile-edit-button, .profile-edit-form button { @apply min-h-11 rounded-xs border border-olive/40 px-4 text-sm text-olive transition-colors hover:bg-olive/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-olive; }
+  .profile-edit-form { @apply mt-5 flex max-w-lg flex-col gap-3; }
+  .profile-edit-form label { @apply text-sm text-muted; }
+  .profile-edit-form input { @apply min-h-12 rounded-xs border border-border bg-surface px-4 text-base text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-olive; }
+  .profile-edit-form > div { @apply flex flex-wrap gap-3; }
+  .profile-message { @apply mt-4 min-h-5 text-xs leading-5 text-muted; }
   .profile-statistics { @apply mt-7 grid grid-cols-2 gap-4; }
   .profile-statistics span { @apply block text-xs text-muted; }
   .profile-statistics strong { @apply mt-3 block text-2xl font-normal; }
