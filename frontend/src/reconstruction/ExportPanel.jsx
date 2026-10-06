@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { formatBytes } from './image.js'
 import { validateMeshResponse } from './mesh.js'
 
-export function ExportPanel({ mesh, objectName, sourceFilename }) {
+export function ExportPanel({ mesh, objectName, sourceFilename, prepareExport }) {
   const [busy, setBusy] = useState('')
   const [message, setMessage] = useState('')
   const [sizes, setSizes] = useState({})
@@ -22,7 +22,9 @@ export function ExportPanel({ mesh, objectName, sourceFilename }) {
     setMessage('')
     try {
       const { serializeStage3, triggerDownload } = await import('./export.js')
-      const file = await serializeStage3(mesh, format, { objectName, sourceFilename })
+      const file = prepareExport
+        ? await prepareExport(mesh, format, { objectName, sourceFilename })
+        : await serializeStage3(mesh, format, { objectName, sourceFilename })
       if (currentMesh.current !== mesh) return
       triggerDownload(file)
       setSizes((previous) => ({ ...previous, [format]: file.sizeBytes }))
@@ -50,6 +52,6 @@ export function ExportPanel({ mesh, objectName, sourceFilename }) {
         <span className="recon-export-meta">{sizes.glb ? formatBytes(sizes.glb) : '.GLB'} ↗</span>
       </button>
     </div>
-    <p className="recon-export-status" role="status" aria-live="polite">{message || 'Exports use the original model coordinates, independent of the viewer camera.'}</p>
+    <p className="recon-export-status" role="status" aria-live="polite">{message || (prepareExport ? 'Downloads use the saved raw Stage-3 assets. The model will not run again.' : 'Exports use the original model coordinates, independent of the viewer camera.')}</p>
   </section>
 }

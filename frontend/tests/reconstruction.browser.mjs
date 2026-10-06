@@ -66,8 +66,9 @@ const mockAuth = () => `
       return query;
     },
     storage: { from(bucket) { return {
-      async upload(path, blob) { window.__reconDb.uploads.push({ bucket, path, size: blob.size }); return { data: { path }, error: null }; },
-      async createSignedUrl(path) { return { data: { signedUrl: 'blob:browser-test' }, error: null }; }
+      async upload(path, blob) { window.__reconDb.uploads.push({ bucket, path, size: blob.size, blob }); return { data: { path }, error: null }; },
+      async download(path) { const saved = window.__reconDb.uploads.find(item => item.bucket === bucket && item.path === path); return saved ? { data: saved.blob, error: null } : { data: null, error: new Error('Not found') }; },
+      async createSignedUrl(path) { const saved = window.__reconDb.uploads.find(item => item.bucket === bucket && item.path === path); return saved ? { data: { signedUrl: URL.createObjectURL(saved.blob) }, error: null } : { data: null, error: new Error('Not found') }; }
     }; } }
   };
   export async function getCurrentUser() { return user; }
@@ -198,6 +199,21 @@ try {
   await until("location.pathname === '/history'")
   await until("!!document.querySelector('.history-card')")
   assert.equal(await evaluate("document.querySelector('.history-card')?.textContent.includes('Whiteboard')"), true, 'saved reconstruction appears in History')
+  await evaluate("document.querySelector('.history-card a').click()")
+  await until("location.pathname.startsWith('/reconstructions/')")
+  await until("!!document.querySelector('.result-stage-canvas')")
+  assert.equal(await evaluate("!!document.querySelector('.result-stage-canvas')"), true, 'saved Stage-3 geometry reopens from its private artifact')
+  await evaluate("document.querySelector('.result-view-tabs [data-view=input]').click()")
+  await until("document.querySelector('.source-view img')?.naturalWidth === 8")
+  assert.equal(await evaluate("location.pathname.startsWith('/reconstructions/')"), true, 'saved INPUT keeps the result route')
+  await evaluate("document.querySelector('.result-view-tabs [data-view=mesh]').click()")
+  await until("!!document.querySelector('.result-stage-canvas')")
+  await evaluate("document.querySelector('.result-detail-sidebar .recon-export-actions button:first-child').click()")
+  await until("window.__downloadNames?.includes('whiteboard-stage3.obj')")
+  await evaluate("document.querySelector('.result-detail-sidebar .recon-export-actions button:last-child').click()")
+  await until("window.__downloadNames?.includes('whiteboard-stage3.glb')")
+  assert.equal(requests, 2, 'reopening and exporting saved assets make zero additional infer calls')
+  await evaluate("window.__downloadNames = []")
   await evaluate("document.querySelector('a[href=\"/reconstruct\"]').click()")
   await until("location.pathname === '/reconstruct' && !!document.querySelector('.recon-mesh-result')")
   assert.equal(await evaluate("document.querySelector('.recon-mesh-result').textContent.includes('2,466')"), true)

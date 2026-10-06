@@ -228,6 +228,18 @@
   .source-view-image { @apply flex h-[clamp(330px,38vw,540px)] items-center justify-center overflow-hidden px-5 py-8 sm:px-8; }
   .source-view-image img { @apply block max-h-full max-w-full object-contain; width: 100%; height: 100%; image-rendering: auto; }
   .source-view-caption { @apply flex flex-wrap justify-between gap-2 border-t border-border/40 px-4 py-3 font-mono text-[10px] leading-5 text-muted sm:px-5; }
+  .result-detail-grid { @apply grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,.75fr)]; }
+  .result-detail-sidebar { @apply flex min-w-0 flex-col gap-6; }
+  .result-detail-meta { @apply rounded-panel border border-border/70 bg-surface px-5 py-6 sm:px-6; }
+  .result-detail-meta h2 { @apply mt-3 text-2xl font-medium tracking-tight text-ivory; }
+  .result-detail-meta > p:not(.dash-kicker) { @apply mt-2 break-all text-sm text-muted; }
+  .result-detail-meta dl { @apply mt-6 grid grid-cols-2 gap-4 border-t border-border/70 pt-5; }
+  .result-detail-meta dt { @apply font-mono text-[10px] uppercase tracking-[.08em] text-muted; }
+  .result-detail-meta dd { @apply mt-1 text-sm text-ivory; }
+  .result-detail-state { @apply min-h-60 rounded-panel border border-border/70 bg-surface px-6 py-12 text-sm leading-7 text-muted; }
+  .recon-view-panel > .result-detail-state { @apply rounded-none border-0 bg-transparent; }
+  .result-detail-state h2 { @apply text-2xl text-ivory; }
+  .result-detail-state p { @apply mt-3 mb-5; }
   .result-static-state { @apply min-h-60 px-6 text-center text-sm leading-7 tracking-normal; }
   .recon-pipeline { @apply mt-8; }
   .recon-pipeline li { @apply bg-transparent px-3 py-4 sm:px-5; }
