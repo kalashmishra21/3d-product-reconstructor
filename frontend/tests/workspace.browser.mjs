@@ -35,7 +35,8 @@ const mockAuth = () => `
     },
     from(table) {
       if (table === 'profiles') window.__dashboardTest.profileCalls++;
-      const query = { select() { return this; }, eq() { return this; }, insert() { return this; }, update() { return this; },
+      const query = { select() { return this; }, eq() { return this; }, in() { return this; }, or() { return this; }, order() { return this; }, insert() { return this; }, update() { return this; },
+        async range() { return { data: [], error: null }; },
         async maybeSingle() { return { data: { id: user?.id, display_name: 'Workspace Test', avatar_path: null }, error: null }; } };
       return query;
     },
@@ -94,7 +95,8 @@ try {
     assert.equal(await evaluate("document.querySelectorAll('h1').length"), 1)
     if (!path.startsWith('/reconstructions')) assert.equal(await evaluate(`document.querySelector('.dash-sidebar nav a[aria-current="page"]').getAttribute('href')`), path)
     if (path === '/history') {
-      assert.equal(await evaluate("document.querySelector('#history-search').disabled"), true)
+      await until("!!document.querySelector('.history-empty')")
+      assert.equal(await evaluate("document.querySelector('#history-search').disabled"), false)
       assert.equal(await evaluate("document.querySelector('.history-empty').textContent.includes('No saved reconstructions yet.')"), true)
     }
     if (path === '/model') {

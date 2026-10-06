@@ -175,6 +175,19 @@
   .history-tools input { @apply min-h-11 w-full max-w-82 border-0 bg-surface px-4 text-sm; }
   .history-tools button { @apply min-h-11 px-4 text-sm text-muted; }
   .history-tools > span { @apply ml-auto text-xs leading-6 text-muted; }
+  .history-filters { @apply flex flex-wrap items-center gap-1; }
+  .history-filters button { @apply min-h-11 rounded-full px-4 text-xs text-muted transition-colors hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-olive; }
+  .history-filters button.is-active { @apply bg-olive/15 text-ivory; }
+  .history-feedback { @apply min-h-28 py-10 text-sm text-muted; }
+  .history-list { @apply divide-y divide-border/70 border-b border-border/70; }
+  .history-card-link { @apply grid min-w-0 grid-cols-[88px_minmax(0,1fr)_20px] items-center gap-5 py-5 text-ivory transition-colors hover:bg-olive/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-olive sm:grid-cols-[112px_minmax(0,1fr)_20px]; }
+  .history-thumb { @apply flex h-22 items-center justify-center overflow-hidden bg-scene text-center font-mono text-[10px] tracking-widest text-olive sm:h-26; }
+  .history-thumb img { @apply h-full w-full object-contain; }
+  .history-card-main { @apply min-w-0; }
+  .history-card-main h2 { @apply mt-2 truncate text-xl font-medium tracking-tight sm:text-2xl; }
+  .history-card-main > p { @apply mt-1 truncate text-sm text-muted; }
+  .history-card-meta { @apply mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted; }
+  .history-card-link > svg { @apply size-4 text-olive; }
   .history-empty { @apply grid min-h-100 items-center gap-8 py-12 md:grid-cols-[.8fr_1.2fr] lg:gap-14; }
   .history-empty h2 { @apply mt-4 text-[clamp(26px,3vw,38px)] tracking-tight; }
   .history-empty p:not(.dash-kicker) { @apply mt-4 max-w-120 text-sm leading-7 text-muted; }

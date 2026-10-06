@@ -42,6 +42,13 @@ const mockAuth = () => `
       const query = {
         select() { return this; },
         eq(key, value) { filters.push([key, value]); return this; },
+        in(key, values) { filters.push([key, values]); return this; },
+        or() { return this; },
+        order() { return this; },
+        async range(start, end) {
+          const rows = window.__reconDb.rows.filter(item => filters.every(([key, value]) => Array.isArray(value) ? value.includes(item[key]) : item[key] === value));
+          return { data: rows.slice(start, end + 1), error: null };
+        },
         insert(value) { action = 'insert'; values = value; return this; },
         update(value) { action = 'update'; values = value; return this; },
         async maybeSingle() {
@@ -187,6 +194,12 @@ try {
   assert.equal(await evaluate("window.__reconDb.rows.length"), 1, 'one real persistence row is created')
   assert.equal(await evaluate("window.__reconDb.rows[0].status"), 'completed')
   assert.deepEqual(await evaluate("window.__reconDb.uploads.map(item => item.path.split('/').pop())"), ['source.png', 'stage3.json', 'stage3.obj', 'stage3.glb'])
+  await evaluate("document.querySelector('a[href=\"/history\"]').click()")
+  await until("location.pathname === '/history'")
+  await until("!!document.querySelector('.history-card')")
+  assert.equal(await evaluate("document.querySelector('.history-card')?.textContent.includes('Whiteboard')"), true, 'saved reconstruction appears in History')
+  await evaluate("document.querySelector('a[href=\"/reconstruct\"]').click()")
+  await until("location.pathname === '/reconstruct' && !!document.querySelector('.recon-mesh-result')")
   assert.equal(await evaluate("document.querySelector('.recon-mesh-result').textContent.includes('2,466')"), true)
   assert.equal(await evaluate("Array.from(document.querySelectorAll('.recon-pipeline li')).map(e => e.className).join('|')"), 'is-complete|is-complete|is-complete|is-complete')
   await until("!!document.querySelector('.recon-export')")
