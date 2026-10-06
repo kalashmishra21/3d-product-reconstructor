@@ -218,6 +218,9 @@
   .profile-identity h2 { @apply mt-5 break-words text-2xl; overflow-wrap:anywhere; }
   .profile-identity > p { @apply mt-2 text-sm text-muted; }
   .profile-identity .button { @apply mt-7 min-w-35; }
+  .profile-avatar-actions { @apply mt-6 flex flex-wrap gap-2; }
+  .profile-avatar-actions button { @apply min-h-11 rounded-xs border border-olive/40 px-4 text-sm text-olive transition-colors hover:bg-olive/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-olive disabled:cursor-wait disabled:opacity-60; }
+  .profile-avatar-note { @apply mt-2 text-xs text-muted; }
   .profile-details > div { @apply grid gap-2 border-b border-border/60 py-5 sm:grid-cols-[.7fr_1fr]; }
   .profile-details dt { @apply text-sm text-muted; }
   .profile-details dd { @apply min-w-0 break-words text-sm; overflow-wrap:anywhere; }

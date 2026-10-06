@@ -36,8 +36,8 @@ function Navigation({ profile, health, pending, onLogout, onNavigate }) {
 }
 export function WorkspaceLayout({ user, health, pending, error, onLogout, children }) {
   const { pathname } = useLocation()
-  const { profile: savedProfile } = useProfile()
-  const profile = dashboardProfile(user, savedProfile)
+  const { profile: savedProfile, avatarUrl } = useProfile()
+  const profile = dashboardProfile(user, savedProfile, avatarUrl)
   const drawer = useRef(null)
   const trigger = useRef(null)
   const account = useRef(null)
