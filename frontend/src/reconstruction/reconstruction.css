@@ -221,6 +221,13 @@
   .result-view-caption, .recon-view-foot { @apply text-[10px] leading-5 tracking-[.03em] px-4 sm:px-5; }
   .recon-view-panel.is-result .recon-view-foot span { font-size: 10px; }
   .result-header-toggle { @apply min-h-11 text-[11px]; }
+  .result-view-tabs { @apply flex gap-1 border-y border-border/40 px-3 py-2 sm:px-5; }
+  .result-view-tabs button { @apply min-h-11 min-w-24 rounded-xs border border-transparent px-4 font-mono text-[11px] tracking-[.08em] text-muted transition-colors hover:text-ivory focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-olive; }
+  .result-view-tabs button[aria-selected=true] { @apply border-olive/30 bg-accent-soft text-olive; }
+  .source-view { @apply flex min-h-0 flex-col bg-[#172019]; }
+  .source-view-image { @apply flex h-[clamp(330px,38vw,540px)] items-center justify-center overflow-hidden px-5 py-8 sm:px-8; }
+  .source-view-image img { @apply block max-h-full max-w-full object-contain; width: 100%; height: 100%; image-rendering: auto; }
+  .source-view-caption { @apply flex flex-wrap justify-between gap-2 border-t border-border/40 px-4 py-3 font-mono text-[10px] leading-5 text-muted sm:px-5; }
   .result-static-state { @apply min-h-60 px-6 text-center text-sm leading-7 tracking-normal; }
   .recon-pipeline { @apply mt-8; }
   .recon-pipeline li { @apply bg-transparent px-3 py-4 sm:px-5; }
@@ -231,6 +238,7 @@
 @media (min-width: 1024px) {
   .recon-view-panel, .recon-view-panel.is-result { position: sticky; top: 20px; height: auto; min-height: 0; }
   .result-stage-canvas { height: clamp(260px, calc(100svh - 460px), 540px); }
+  .source-view-image { height: clamp(260px, calc(100svh - 460px), 540px); }
 }
 @media (max-width: 1023px) {
   .recon-view-panel, .recon-view-panel.is-result { position: static; }
@@ -241,5 +249,6 @@
   .recon-live-label { font-size: 10px; }
   .recon-viewport { min-height: 0; height: 330px; }
   .result-stage-canvas { height: 330px; }
+  .source-view-image { height: 330px; }
   .result-view-presets > span { width: 100%; margin: 0; padding: 5px 8px; }
 }

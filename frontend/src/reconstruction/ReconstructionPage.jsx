@@ -6,6 +6,7 @@ import { useReconstructionJob } from '../jobs/ReconstructionJobProvider.jsx'
 import { formatBytes } from './image'
 import { InputViewport } from './InputViewport'
 import { ResultViewport } from './ResultViewport'
+import { SourceView } from './SourceView'
 import { ExportPanel } from './ExportPanel'
 import { formatMilliseconds, validateMeshResponse } from './mesh'
 import './reconstruction.css'
@@ -28,6 +29,15 @@ export function ReconstructionPage() {
   const inferenceError = ['inference', 'database', 'persistence'].includes(job.state.failureKind) ? job.state.error : ''
   const exportAvailable = useMemo(() => Boolean(mesh) && !validateMeshResponse(mesh), [mesh])
   const diagnostic = job.state.diagnostic
+
+  function switchView(event) {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      event.preventDefault()
+      const view = resultView === 'mesh' ? 'input' : 'mesh'
+      setResultView(view)
+      event.currentTarget.parentElement.querySelector(`[data-view="${view}"]`)?.focus()
+    }
+  }
 
   function reset() {
     if (!job.reset()) return
@@ -132,10 +142,14 @@ export function ReconstructionPage() {
         </section>
 
         <section className={'recon-view-panel' + (mesh && resultView === 'mesh' ? ' is-result' : '')} aria-labelledby="recon-view-title">
-          <div className="recon-view-header"><div><p className="recon-eyebrow">{mesh && resultView === 'mesh' ? 'REAL MODEL OUTPUT / 003' : 'SPATIAL INPUT STAGE / 001'}</p><h2 id="recon-view-title">{mesh && resultView === 'mesh' ? 'Real Stage-3 mesh' : 'Input inspection'}</h2></div><div className="recon-view-header-end">{mesh && resultView === 'input' && <button type="button" className="result-header-toggle" onClick={() => setResultView('mesh')}>View mesh</button>}<span className="recon-live-label">{inferencePhase === 'running' ? 'MODEL INFERENCE' : mesh && resultView === 'mesh' ? 'MESH GENERATED' : phase === 'ready' ? 'PREFLIGHT READY' : selection ? 'IMAGE LOADED' : 'AWAITING IMAGE'}</span></div></div>
+          <div className="recon-view-header"><div><p className="recon-eyebrow">{mesh && resultView === 'mesh' ? 'REAL MODEL OUTPUT / 003' : 'SOURCE IMAGE / 001'}</p><h2 id="recon-view-title">{mesh && resultView === 'mesh' ? 'Real Stage-3 mesh' : 'Input inspection'}</h2></div><div className="recon-view-header-end"><span className="recon-live-label">{inferencePhase === 'running' ? 'MODEL INFERENCE' : mesh && resultView === 'mesh' ? 'MESH GENERATED' : phase === 'ready' ? 'PREFLIGHT READY' : selection ? 'IMAGE LOADED' : 'AWAITING IMAGE'}</span></div></div>
+          {mesh && <div className="result-view-tabs" role="tablist" aria-label="Inspect reconstruction or source">
+            <button type="button" role="tab" data-view="mesh" aria-selected={resultView === 'mesh'} tabIndex={resultView === 'mesh' ? 0 : -1} onClick={() => setResultView('mesh')} onKeyDown={(event) => switchView(event)}>RESULT</button>
+            <button type="button" role="tab" data-view="input" aria-selected={resultView === 'input'} tabIndex={resultView === 'input' ? 0 : -1} onClick={() => setResultView('input')} onKeyDown={(event) => switchView(event)}>INPUT</button>
+          </div>}
           {mesh && resultView === 'mesh' && diagnostic?.degenerate && <div className="recon-volume-note" role="status"><strong>Low-volume reconstruction</strong><p>The current model produced limited geometric depth for this image.</p><span>Inspection and raw OBJ / GLB export remain available.</span></div>}
-          {mesh && resultView === 'mesh' ? <ResultViewport mesh={mesh} objectName={objectName} onInput={() => setResultView('input')} /> : <InputViewport previewUrl={previewUrl} width={selection?.width} height={selection?.height} scanning={phase === 'preflighting' || inferencePhase === 'running'} />}
-          <div className="recon-view-foot"><span>{mesh && resultView === 'mesh' ? 'ACTUAL STAGE-3 GEOMETRY' : selection ? 'ACTUAL INPUT IMAGE / 2D PLANE' : 'PROCEDURAL SPATIAL GUIDE'}</span><span>{mesh && resultView === 'mesh' ? `${mesh.vertices_count.toLocaleString()} VERTICES / ${mesh.faces_count.toLocaleString()} FACES` : selection ? 'INPUT PREVIEW ONLY' : 'ILLUSTRATIVE — NOT MODEL OUTPUT'}</span></div>
+          {mesh && resultView === 'mesh' ? <ResultViewport mesh={mesh} objectName={objectName} /> : selection && previewUrl ? <SourceView src={previewUrl} filename={selection.file.name} width={selection.width} height={selection.height} /> : <InputViewport previewUrl={previewUrl} width={selection?.width} height={selection?.height} scanning={phase === 'preflighting' || inferencePhase === 'running'} />}
+          <div className="recon-view-foot"><span>{mesh && resultView === 'mesh' ? 'ACTUAL STAGE-3 GEOMETRY' : selection ? 'ACTUAL SOURCE IMAGE / 2D' : 'PROCEDURAL SPATIAL GUIDE'}</span><span>{mesh && resultView === 'mesh' ? `${mesh.vertices_count.toLocaleString()} VERTICES / ${mesh.faces_count.toLocaleString()} FACES` : selection ? 'INPUT PREVIEW ONLY' : 'ILLUSTRATIVE — NOT MODEL OUTPUT'}</span></div>
         </section>
       </div>
 
