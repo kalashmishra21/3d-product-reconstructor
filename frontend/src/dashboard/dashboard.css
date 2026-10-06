@@ -236,6 +236,18 @@
   .profile-statistics { @apply mt-7 grid grid-cols-2 gap-4; }
   .profile-statistics span { @apply block text-xs text-muted; }
   .profile-statistics strong { @apply mt-3 block text-2xl font-normal; }
+  .profile-activity { @apply mt-9 border-t border-border/70 pt-7; }
+  .profile-activity > h2 { @apply mt-2 text-xl font-medium tracking-tight; }
+  .profile-statistics { @apply sm:grid-cols-4; }
+  .profile-recent { @apply mt-8 border-t border-border/70 pt-5; }
+  .profile-recent-heading { @apply flex items-center justify-between gap-4; }
+  .profile-recent-heading h3 { @apply text-base font-medium; }
+  .profile-recent-heading a { @apply min-h-11 text-sm leading-11 text-olive; }
+  .profile-recent ul { @apply mt-3 divide-y divide-border/60; }
+  .profile-recent li a { @apply flex min-h-12 items-center justify-between gap-3 py-2 text-sm text-ivory hover:text-olive; }
+  .profile-recent li a span { @apply min-w-0 truncate; }
+  .profile-recent li small, .profile-recent > p { @apply text-xs text-muted; }
+  .profile-recent > p { @apply mt-3; }
   .result-detail-empty { @apply flex min-h-64 flex-wrap items-center gap-5 border-y border-border py-8; }
   .result-detail-empty > p { @apply w-full text-sm text-muted; }
 }

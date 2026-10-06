@@ -2,6 +2,7 @@ import { supabase } from './auth.js'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 export const RECONSTRUCTION_COLUMNS = 'id,user_id,object_name,source_filename,source_mime,source_width,source_height,source_size_bytes,status,model_name,stage,vertices_count,faces_count,inference_ms,model_init_ms,total_ms,source_path,mesh_json_path,obj_path,glb_path,obj_size_bytes,glb_size_bytes,error_message,created_at,updated_at,completed_at'
+export const PROFILE_RECENT_COLUMNS = 'id,object_name,source_filename,status,created_at'
 const MUTABLE = new Set(['object_name', 'status', 'model_name', 'stage', 'vertices_count', 'faces_count', 'inference_ms', 'model_init_ms', 'total_ms', 'source_path', 'mesh_json_path', 'obj_path', 'glb_path', 'obj_size_bytes', 'glb_size_bytes', 'error_message'])
 
 function useClient(client) {
@@ -72,7 +73,20 @@ export async function listReconstructions({ userId, status, search = '', offset 
 }
 
 export async function listRecentReconstructions(userId, limit = 3, options = {}) {
-  return listReconstructions({ userId, limit }, options)
+  const api = useClient(options.client ?? supabase)
+  const owner = await ownUser(api, userId)
+  const count = Math.min(10, Math.max(1, Math.trunc(limit)))
+  return unwrap(await api.from('reconstructions').select(PROFILE_RECENT_COLUMNS).eq('user_id', owner)
+    .order('created_at', { ascending: false }).range(0, count - 1)) ?? []
+}
+
+export async function getProfileStats(userId, options = {}) {
+  return {
+    total: await countReconstructions(userId, null, options),
+    completed: await countReconstructions(userId, 'completed', options),
+    lowVolume: await countReconstructions(userId, 'low_volume', options),
+    failed: await countReconstructions(userId, 'failed', options),
+  }
 }
 
 export async function countReconstructions(userId, status, { client = supabase } = {}) {

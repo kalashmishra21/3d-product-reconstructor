@@ -37,7 +37,8 @@ const mockAuth = () => `
       if (table === 'profiles') window.__dashboardTest.profileCalls++;
       const query = { select() { return this; }, eq() { return this; }, in() { return this; }, or() { return this; }, order() { return this; }, insert() { return this; }, update() { return this; },
         async range() { return { data: [], error: null }; },
-        async maybeSingle() { return { data: { id: user?.id, display_name: 'Workspace Test', avatar_path: null }, error: null }; } };
+        async maybeSingle() { return { data: { id: user?.id, display_name: 'Workspace Test', avatar_path: null }, error: null }; },
+        then(resolve) { return Promise.resolve({ count: 0, error: null }).then(resolve); } };
       return query;
     },
   };
@@ -106,7 +107,8 @@ try {
     if (path === '/profile') {
       assert.equal(await evaluate("document.querySelector('.profile-details').textContent.includes('layout-test@example.invalid')"), true)
       assert.equal(await evaluate("document.querySelector('.profile-details').textContent.includes('Google')"), true)
-      assert.equal(await evaluate("document.querySelector('.profile-statistics').textContent.includes(String.fromCharCode(8212))"), true)
+      assert.equal(await evaluate("document.querySelector('.profile-statistics').textContent.includes('Total reconstructions')"), true)
+      assert.equal(await evaluate("document.querySelector('.profile-statistics').textContent.includes('Low volume')"), true)
       assert.equal(await evaluate("!!document.querySelector('.profile-edit-button')"), true, 'Profile has an editable saved display name')
     }
     for (const width of [1440,1280,1024,768,390,320]) {

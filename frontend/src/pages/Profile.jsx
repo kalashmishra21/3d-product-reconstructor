@@ -1,16 +1,30 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useWorkspace, WorkspaceAvatar } from '../dashboard/WorkspaceLayout'
 import { useProfile } from '../profile/ProfileProvider.jsx'
+import { useReconstructionJob } from '../jobs/ReconstructionJobProvider.jsx'
+import { getProfileStats, listRecentReconstructions } from '../lib/reconstructions.js'
 
 export default function Profile() {
   const { user, profile, pending, onLogout } = useWorkspace()
   const { profile: savedProfile, loading, error, saveDisplayName, replaceAvatar, removeAvatar } = useProfile()
+  const { state: job } = useReconstructionJob()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [avatarBusy, setAvatarBusy] = useState(false)
   const avatarInput = useRef(null)
+  const [activity, setActivity] = useState({ loading: true, error: '', stats: null, recent: [] })
+  const completedJob = ['completed', 'low_volume', 'failed'].includes(job.phase) ? `${job.id}:${job.phase}` : ''
+  useEffect(() => {
+    let active = true
+    setActivity((current) => ({ ...current, loading: true, error: '' }))
+    Promise.all([getProfileStats(user.id), listRecentReconstructions(user.id, 3)])
+      .then(([stats, recent]) => { if (active) setActivity({ loading: false, error: '', stats, recent }) })
+      .catch(() => { if (active) setActivity({ loading: false, error: 'Could not load your reconstruction activity.', stats: null, recent: [] }) })
+    return () => { active = false }
+  }, [user.id, completedJob])
   const providers = [...new Set((user?.identities ?? []).map(item => item.provider).filter(value => typeof value === 'string'))]
   if (!providers.length && typeof user?.app_metadata?.provider === 'string') providers.push(user.app_metadata.provider)
   const provider = providers.map(value => value === 'google' ? 'Google' : value === 'email' ? 'Email / password' : value).join(', ') || 'Not available'
@@ -64,7 +78,13 @@ export default function Profile() {
           {editing && <form onSubmit={save} className="profile-edit-form"><label htmlFor="profile-display-name">Display name</label><input id="profile-display-name" type="text" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={80} autoComplete="nickname" /><div><button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button><button type="button" disabled={saving} onClick={cancelEdit}>Cancel</button></div></form>}
           <p className="profile-message" role={message.startsWith('Could not') ? 'alert' : 'status'} aria-live="polite">{message}</p>
         </div>
-        <div className="profile-statistics"><div><span>Saved reconstructions</span><strong>—</strong></div><div><span>Recent activity</span><strong>—</strong></div></div>
+        <section className="profile-activity" aria-labelledby="profile-activity-title"><p className="dash-kicker">YOUR ACTIVITY</p><h2 id="profile-activity-title">Reconstruction record</h2>
+          {activity.loading && <p role="status" className="profile-message">Loading activity…</p>}
+          {activity.error && <p role="alert" className="profile-message">{activity.error}</p>}
+          {!activity.loading && !activity.error && <><div className="profile-statistics">{[['Total reconstructions',activity.stats.total],['Completed',activity.stats.completed],['Low volume',activity.stats.lowVolume],['Failed',activity.stats.failed]].map(([label,count]) => <div key={label}><span>{label}</span><strong>{count.toLocaleString()}</strong></div>)}</div>
+            <div className="profile-recent"><div className="profile-recent-heading"><h3>Recent activity</h3><Link to="/history">View history</Link></div>{activity.recent.length ? <ul>{activity.recent.map((row) => <li key={row.id}><Link to={`/reconstructions/${row.id}`}><span>{row.object_name || row.source_filename || 'Untitled reconstruction'}</span><small>{row.status?.replaceAll('_', ' ') || 'Processing'}</small></Link></li>)}</ul> : <p>No saved reconstructions yet.</p>}</div>
+          </>}
+        </section>
       </section>
     </div>
   </section>
