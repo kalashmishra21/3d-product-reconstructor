@@ -103,6 +103,11 @@ try {
     if (path === '/model') {
       assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.model-evaluation dd'), n => n.textContent)"), ['0.037181','0.000640','0.001722'])
       assert.equal(await evaluate("document.body.innerText.includes('The current checkpoint is retained for integration testing while reconstruction quality is being re-evaluated.')"), true)
+      assert.equal(await evaluate("!!document.querySelector('button[aria-label=\"Explore Stage 02\"]')"), true, 'stage selector is interactive')
+      await evaluate("document.querySelector('button[aria-label=\"Explore Stage 02\"]').click()")
+      assert.equal(await evaluate("document.querySelector('.model-selected-stage').textContent.includes('618')"), true)
+      await evaluate("document.querySelector('.model-evaluation summary').click()")
+      assert.equal(await evaluate("document.querySelector('.model-evaluation details').open"), true)
     }
     if (path === '/profile') {
       assert.equal(await evaluate("document.querySelector('.profile-details').textContent.includes('layout-test@example.invalid')"), true)

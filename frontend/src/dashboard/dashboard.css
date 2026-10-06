@@ -211,6 +211,30 @@
   .model-evaluation > div { @apply flex flex-wrap justify-between gap-3 border-b border-border/60 py-4 text-sm; }
   .model-evaluation dt { @apply text-muted; }
   .model-evaluation dd { @apply font-mono text-ivory; }
+  .model-explorer { @apply min-w-0 border-y border-border/70 py-7; }
+  .model-explorer-heading { @apply flex flex-wrap items-end justify-between gap-4; }
+  .model-explorer-heading h2 { @apply mt-2 text-[clamp(24px,2.6vw,36px)] tracking-tight; }
+  .model-explorer-heading > span { @apply font-mono text-[10px] tracking-wider text-muted; }
+  .model-pipeline { @apply my-8 grid gap-1.5 sm:grid-cols-4 lg:grid-cols-7; }
+  .model-pipeline li { @apply flex min-h-16 items-center gap-2 border border-border/60 bg-surface px-3 text-xs leading-5 text-muted; }
+  .model-pipeline li span { @apply shrink-0 font-mono text-[10px] text-olive; }
+  .model-pipeline li.is-selected { @apply border-olive/55 bg-accent-soft text-ivory; }
+  .model-stage-selector { @apply grid grid-cols-3 gap-2 sm:gap-4; }
+  .model-stage-selector button { @apply flex min-w-0 min-h-26 flex-col items-start justify-center border border-border bg-surface px-3 text-left text-muted transition-colors hover:border-olive/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-olive sm:px-5; }
+  .model-stage-selector button[aria-pressed=true] { @apply border-olive/65 bg-accent-soft text-ivory; }
+  .model-stage-selector button span { @apply font-mono text-[10px] tracking-wider; }
+  .model-stage-selector button strong { @apply mt-2 font-mono text-xl font-normal sm:text-2xl; }
+  .model-stage-selector button small { @apply text-xs; }
+  .model-selected-stage { @apply mt-5 flex flex-wrap justify-between gap-6 border-l-2 border-olive/50 bg-surface-elevated px-5 py-6 sm:px-7; }
+  .model-selected-stage > div { @apply max-w-xl; }
+  .model-selected-stage h3 { @apply mt-3 text-xl tracking-tight; }
+  .model-selected-stage p:last-child { @apply mt-2 text-sm leading-6 text-muted; }
+  .model-selected-stage dl { @apply flex gap-7; }
+  .model-selected-stage dt { @apply font-mono text-[10px] tracking-wider text-muted; }
+  .model-selected-stage dd { @apply mt-2 font-mono text-lg text-ivory; }
+  .model-evaluation details { @apply max-w-md; }
+  .model-evaluation summary { @apply min-h-7 cursor-pointer text-ivory marker:text-olive focus-visible:outline focus-visible:outline-2 focus-visible:outline-olive; }
+  .model-evaluation details p { @apply mt-2 max-w-md text-xs leading-5 text-muted; }
   .model-limitation { @apply border-l border-olive/40 pl-6; }
   .model-limitation > p:not(.dash-kicker) { @apply mt-4 text-sm leading-7 text-muted; }
   .profile-layout { @apply grid gap-10 border-t border-border py-9 md:grid-cols-[.75fr_1.25fr] lg:gap-16; }

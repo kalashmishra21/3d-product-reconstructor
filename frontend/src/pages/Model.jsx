@@ -1,10 +1,20 @@
-﻿import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Arrow } from '../components/Icons'
-const stages = [[156, 308], [618, 1232], [2466, 4928]]
+import { stages, metrics } from '../model/modelFacts.js'
+import { StageSelector } from '../model/StageSelector.jsx'
+import { ModelPipeline } from '../model/ModelPipeline.jsx'
+import { MetricExplanation } from '../model/MetricExplanation.jsx'
+
 export default function Model() {
+  const [selected, setSelected] = useState(2)
+  const stage = stages[selected]
   return <section className="workspace-page" aria-labelledby="model-page-title">
-    <div className="workspace-page-heading"><div><p className="dash-kicker">THE GEOMETRY ENGINE</p><h1 id="model-page-title">Pixel2Mesh<span className="text-olive">.</span></h1><p>A graph neural network that deforms an ellipsoid through three stages, guided by a single RGB image.</p></div><span className="workspace-tag">INTEGRATION CHECKPOINT</span></div>
-    <div className="model-stage-grid">{stages.map(([vertices, faces], i) => <section key={vertices} className="model-stage"><div className="model-stage-top"><span>0{i + 1}</span><span>{i === 2 ? 'FINAL GEOMETRY' : 'MESH REFINEMENT'}</span></div><div className="model-topology" aria-hidden="true"><svg viewBox="0 0 240 120" fill="none" stroke="currentColor"><path d="m120 12 82 36v36l-82 26-82-26V48z M38 48l82 28 82-28M120 12v98M38 84l82-72 82 72" />{i > 0 && <path d="m79 30 82 67M161 30 79 97M38 66h164M79 30v67M161 30v67" />}{i === 2 && <path d="m59 39 122 54M181 39 59 93M100 20v84M140 20v84M38 75h164M58 48v41M182 48v41" />}</svg></div><h2>Stage {i + 1}</h2><dl><div><dt>Vertices</dt><dd>{vertices.toLocaleString()}</dd></div><div><dt>Faces</dt><dd>{faces.toLocaleString()}</dd></div></dl></section>)}</div>
-    <div className="model-details-grid"><section><p className="dash-kicker">MEASURED ON THE TEST SET</p><h2>Evaluation metrics</h2><dl className="model-evaluation">{[['Chamfer Distance','0.037181'],['F1 @ τ','0.000640'],['F1 @ 2τ','0.001722']].map(([label,value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl><p className="model-context">Aggregate test-set measurements, not accuracy percentages or quality scores for an uploaded image.</p></section><section className="model-limitation"><p className="dash-kicker">CURRENT BASELINE</p><h2>Integration first.<br /><em>Quality under review.</em></h2><p>The current checkpoint is retained for integration testing while reconstruction quality is being re-evaluated.</p><p>Some results have limited geometric depth. The workspace always displays the real model output and preserves it in exported assets.</p><p className="dash-categories">13 trained object categories</p><Link className="dash-text-link" to="/reconstruct">Open the workspace <Arrow diagonal /></Link></section></div>
+    <div className="workspace-page-heading"><div><p className="dash-kicker">THE GEOMETRY ENGINE</p><h1 id="model-page-title">Pixel2Mesh<span className="text-olive">.</span></h1><p>From one RGB image to three successive mesh deformations. Explore the verified topology at each stage.</p></div><span className="workspace-tag">INTEGRATION CHECKPOINT</span></div>
+    <div className="model-explorer"><div className="model-explorer-heading"><div><p className="dash-kicker">IMAGE TO GEOMETRY</p><h2>Three steps toward a mesh.</h2></div><span>TECHNICAL PIPELINE / NOT PREDICTED GEOMETRY</span></div>
+      <ModelPipeline stage={selected} /><StageSelector selected={selected} onSelect={setSelected} />
+      <div className="model-selected-stage" role="status" aria-live="polite"><div><p className="dash-kicker">STAGE {stage.number} / {selected === 2 ? 'FINAL' : 'REFINEMENT'}</p><h3>{stage.heading}</h3><p>{stage.description}</p></div><dl><div><dt>VERTICES</dt><dd>{stage.vertices.toLocaleString()}</dd></div><div><dt>FACES</dt><dd>{stage.faces.toLocaleString()}</dd></div></dl></div>
+    </div>
+    <div className="model-details-grid"><section><p className="dash-kicker">MEASURED ON THE TEST SET</p><h2>Evaluation metrics</h2><dl className="model-evaluation">{metrics.map((metric) => <MetricExplanation key={metric.label} metric={metric} />)}</dl><p className="model-context">Aggregate test-set measurements, not accuracy percentages or quality scores for an uploaded image.</p></section><section className="model-limitation"><p className="dash-kicker">CURRENT BASELINE</p><h2>Integration first.<br /><em>Quality under review.</em></h2><p>The current checkpoint is retained for integration testing while reconstruction quality is being re-evaluated.</p><p>Some results have limited geometric depth. The workspace always displays the real model output and preserves it in exported assets.</p><p className="dash-categories">13 trained object categories</p><Link className="dash-text-link" to="/reconstruct">Open the workspace <Arrow diagonal /></Link></section></div>
   </section>
 }
