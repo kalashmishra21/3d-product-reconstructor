@@ -327,6 +327,10 @@ try {
     document.querySelector('.recon-drop').dispatchEvent(new DragEvent('drop', {bubbles:true, dataTransfer:transfer}));
   })()`)
   await until("document.querySelector('.recon-selection')?.textContent.includes('dropped.png')")
+  await evaluate("window.__xssFired=false; window.__reconDb.rows.forEach(row => row.object_name='<img src=x onerror=window.__xssFired=true>'); document.querySelector('.dash-sidebar a[href=\"/history\"]').click()")
+  await until("location.pathname === '/history' && !!document.querySelector('.history-card')")
+  assert.equal(await evaluate("document.querySelector('.history-card-main h2').textContent.includes('<img')"), true, 'untrusted object name remains text')
+  assert.equal(await evaluate("document.querySelector('.history-card-main h2 img') === null && window.__xssFired === false"), true, 'object-name markup is never executed')
   authenticated = false
   await visit('/reconstruct', '.auth-form')
   assert.equal(await evaluate('location.pathname'), '/login')

@@ -15,8 +15,13 @@ function bucketOrThrow(bucket) {
   if (!BUCKETS.has(bucket)) throw new Error('Unsupported private bucket')
   return bucket
 }
-function pathOrThrow(path) {
-  if (!/^[0-9a-f-]{36}\/[0-9a-f-]{36}(?:\/|\.)/.test(String(path)) || String(path).includes('..')) throw new Error('Invalid private object path')
+function pathOrThrow(path, bucket) {
+  const parts = String(path ?? '').split('/')
+  const validOwner = UUID.test(parts[0] ?? '')
+  const avatar = parts.length === 2 && /^([0-9a-f-]{36})\.(jpg|png|webp)$/i.exec(parts[1])
+  const artifact = parts.length === 3 && UUID.test(parts[1]) && /^(source\.(jpg|png|webp)|stage3\.(json|obj|glb))$/i.test(parts[2])
+  if (!validOwner || bucket === 'avatars' && (!avatar || !UUID.test(avatar[1])) ||
+      bucket === 'reconstruction-artifacts' && !artifact) throw new Error('Invalid private object path')
   return path
 }
 function unwrap(result) {
@@ -68,17 +73,17 @@ export async function uploadAvatar(userId, avatarId, file, { client = supabase }
 
 export async function signedImageUrl(bucket, path, ttlSeconds = 120, { client = supabase } = {}) {
   const api = clientOrThrow(client)
-  const data = unwrap(await api.storage.from(bucketOrThrow(bucket)).createSignedUrl(pathOrThrow(path), ttlSeconds))
+  const data = unwrap(await api.storage.from(bucketOrThrow(bucket)).createSignedUrl(pathOrThrow(path, bucket), ttlSeconds))
   return data.signedUrl
 }
 
 export async function downloadPrivate(bucket, path, { client = supabase } = {}) {
   const api = clientOrThrow(client)
-  return unwrap(await api.storage.from(bucketOrThrow(bucket)).download(pathOrThrow(path)))
+  return unwrap(await api.storage.from(bucketOrThrow(bucket)).download(pathOrThrow(path, bucket)))
 }
 
 export async function removeObjects(bucket, paths, { client = supabase } = {}) {
   if (!Array.isArray(paths) || paths.length === 0) return []
   const api = clientOrThrow(client)
-  return unwrap(await api.storage.from(bucketOrThrow(bucket)).remove(paths.map(pathOrThrow)))
+  return unwrap(await api.storage.from(bucketOrThrow(bucket)).remove(paths.map((path) => pathOrThrow(path, bucket))))
 }
