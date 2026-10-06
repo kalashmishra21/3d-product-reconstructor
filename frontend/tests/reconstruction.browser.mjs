@@ -185,10 +185,14 @@ try {
   await evaluate("document.querySelector('a[href=\"/model\"]').click()")
   await until("location.pathname === '/model'")
   assert.equal(await evaluate("document.querySelector('.global-job-status').textContent.includes('PROCESSING')"), true, 'inference remains globally active after SPA navigation')
+  await evaluate("document.querySelector('.dash-sidebar a[href=\"/profile\"]').click()")
+  await until("location.pathname === '/profile'")
+  assert.equal(await evaluate("document.querySelector('.global-job-status').textContent.includes('PROCESSING')"), true, 'inference also survives Profile navigation')
   deferInfer = false
   await send('Fetch.fulfillRequest', { requestId: pendingInferRequest, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: 'application/json' }], body: Buffer.from(mockMesh).toString('base64') })
   pendingInferRequest = null
   await until("document.querySelector('.global-job-status').textContent.includes('COMPLETED')")
+  assert.equal(await evaluate("document.querySelector('.global-job-notice')?.textContent.includes('reconstruction finished')"), true, 'completion is announced off the reconstruction page')
   await evaluate("document.querySelector('a[href=\"/reconstruct\"]').click()")
   await until("location.pathname === '/reconstruct' && !!document.querySelector('.recon-mesh-result')")
   assert.equal(requests, 2)
