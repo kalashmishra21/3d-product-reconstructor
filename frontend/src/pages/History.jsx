@@ -4,7 +4,8 @@ import { Arrow } from '../components/Icons'
 import { DashboardIcon } from '../dashboard/DashboardIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { useReconstructionJob } from '../jobs/ReconstructionJobProvider.jsx'
-import { listReconstructions } from '../lib/reconstructions.js'
+import { getReconstruction, interruptStaleReconstruction, listReconstructions } from '../lib/reconstructions.js'
+import { classifyProcessing, STALE_AFTER_MS } from '../jobs/stale.js'
 import { HistoryCard } from './HistoryCard.jsx'
 
 const FILTERS = [['all', 'All'], ['processing', 'Processing'], ['completed', 'Completed'],
@@ -25,7 +26,16 @@ export default function History() {
     setError('')
     const timer = window.setTimeout(() => {
       listReconstructions({ userId: user.id, status: filter, search, limit: 24 })
-        .then((data) => { if (live) setRows(data) })
+        .then(async (data) => {
+          const activeId = ['processing', 'persisting'].includes(job.phase) ? job.id : null
+          const cutoff = new Date(Date.now() - STALE_AFTER_MS).toISOString()
+          const reconciled = await Promise.all(data.map(async (row) => {
+            if (classifyProcessing(row, activeId) !== 'stale') return row
+            try { return await interruptStaleReconstruction(row.id, cutoff) ?? await getReconstruction(row.id) }
+            catch { return row }
+          }))
+          if (live) setRows(reconciled.filter(Boolean))
+        })
         .catch(() => { if (live) setError('Could not load your reconstructions. Try again.') })
         .finally(() => { if (live) setLoading(false) })
     }, search ? 250 : 0)

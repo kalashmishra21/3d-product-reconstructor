@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import { Arrow } from '../components/Icons'
 import { useReconstructionJob } from '../jobs/ReconstructionJobProvider.jsx'
 import { loadSavedResult } from '../lib/resultDetail.js'
+import { interruptStaleReconstruction } from '../lib/reconstructions.js'
+import { classifyProcessing, STALE_AFTER_MS } from '../jobs/stale.js'
 import { downloadPrivate } from '../lib/storage.js'
 import { ExportPanel } from '../reconstruction/ExportPanel.jsx'
 import { formatMilliseconds } from '../reconstruction/mesh.js'
@@ -21,16 +23,26 @@ export default function ResultDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [view, setView] = useState('mesh')
+  const liveJobPhase = job.id === id && ['processing', 'persisting'].includes(job.phase) ? job.phase : null
 
   useEffect(() => {
     let active = true
     setLoading(true)
     setError(false)
-    loadSavedResult(id).then((result) => { if (active) setSaved(result) })
+    loadSavedResult(id).then(async (result) => {
+      if (classifyProcessing(result.row, liveJobPhase ? id : null) === 'stale') {
+        const cutoff = new Date(Date.now() - STALE_AFTER_MS).toISOString()
+        try {
+          const updated = await interruptStaleReconstruction(id, cutoff)
+          result = updated ? { ...result, row: updated } : await loadSavedResult(id)
+        } catch { /* Preserve the saved row if reconciliation is temporarily unavailable. */ }
+      }
+      if (active) setSaved(result)
+    })
       .catch(() => { if (active) setError(true) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [id, job.id, job.phase])
+  }, [id, liveJobPhase])
 
   function onTabKey(event) {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
@@ -70,7 +82,7 @@ export default function ResultDetail() {
         </div>
         {view === 'mesh' && diagnostic?.degenerate && <div className="recon-volume-note" role="status"><strong>Low-volume reconstruction</strong><p>The current model produced limited geometric depth for this image.</p><span>Raw OBJ / GLB exports remain available.</span></div>}
         {view === 'mesh' && hasResult && <ResultViewport mesh={mesh} objectName={row.object_name} />}
-        {view === 'mesh' && !hasResult && <div className="result-detail-state" role="status">{saved.artifactError ? 'Saved mesh data could not be validated.' : row.status === 'processing' ? 'This reconstruction is processing in the active browser session.' : row.status === 'failed' ? 'This reconstruction did not complete.' : row.status === 'interrupted' ? 'This reconstruction was interrupted.' : 'No saved mesh is available.'}</div>}
+        {view === 'mesh' && !hasResult && <div className="result-detail-state" role="status">{saved.artifactError ? 'Saved mesh data could not be validated.' : row.status === 'processing' ? 'This reconstruction may still be processing in another browser session.' : row.status === 'failed' ? 'This reconstruction did not complete.' : row.status === 'interrupted' ? 'This browser-owned reconstruction was interrupted. Start a new one with the source image.' : 'No saved mesh is available.'}</div>}
         {view === 'input' && saved.sourceUrl && <SourceView src={saved.sourceUrl} filename={row.source_filename} width={row.source_width} height={row.source_height} />}
         {view === 'input' && !saved.sourceUrl && <div className="result-detail-state" role="status">{saved.sourceError ? 'The private source image could not be opened.' : 'No source image is saved for this reconstruction.'}</div>}
         <div className="recon-view-foot"><span>{view === 'mesh' ? 'PERSISTED RAW MODEL GEOMETRY' : 'ORIGINAL PRIVATE SOURCE IMAGE'}</span><span>{hasResult && view === 'mesh' ? `${mesh.vertices_count.toLocaleString()} VERTICES / ${mesh.faces_count.toLocaleString()} FACES` : row.source_filename}</span></div>

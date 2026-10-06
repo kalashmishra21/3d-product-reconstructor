@@ -88,3 +88,18 @@ export async function countReconstructions(userId, status, { client = supabase }
 export async function renameReconstruction(id, name, options) {
   return patchReconstruction(id, { object_name: String(name ?? '').trim().slice(0, 80) || null }, options)
 }
+
+/** A no-op status update refreshes the database-managed updated_at timestamp. */
+export async function heartbeatReconstruction(id, { client = supabase } = {}) {
+  return patchReconstruction(id, { status: 'processing' }, { expectedStatus: 'processing', client })
+}
+
+/** Compare-and-set: a completed or recently refreshed row cannot become interrupted. */
+export async function interruptStaleReconstruction(id, cutoffIso, { client = supabase } = {}) {
+  if (!validId(id) || !Number.isFinite(Date.parse(cutoffIso))) throw new Error('Invalid stale reconstruction')
+  const api = useClient(client)
+  const userId = await ownUser(api)
+  return unwrap(await api.from('reconstructions').update({ status: 'interrupted' })
+    .eq('id', id).eq('user_id', userId).eq('status', 'processing').lt('updated_at', cutoffIso)
+    .select(RECONSTRUCTION_COLUMNS).maybeSingle())
+}

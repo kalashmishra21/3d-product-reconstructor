@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { createReconstruction, patchReconstruction, renameReconstruction } from '../lib/reconstructions.js'
+import { createReconstruction, heartbeatReconstruction, patchReconstruction, renameReconstruction } from '../lib/reconstructions.js'
 import { uploadArtifactSet, uploadSource } from '../lib/storage.js'
 import { inferImage } from '../lib/inference.js'
 import { preflightErrorMessage, preflightImage } from '../lib/preflight.js'
@@ -35,6 +35,19 @@ export function ReconstructionJobProvider({ userId, children }) {
     controller.current?.abort()
     releasePreview()
   }, [releasePreview])
+
+  useEffect(() => {
+    if (!state.id || !['processing', 'persisting'].includes(state.phase)) return undefined
+    let pending = false
+    const timer = window.setInterval(async () => {
+      if (pending || !active.current) return
+      pending = true
+      try { await heartbeatReconstruction(state.id) }
+      catch { /* A lost heartbeat is reconciled conservatively after the job stops. */ }
+      finally { pending = false }
+    }, 30_000)
+    return () => window.clearInterval(timer)
+  }, [state.id, state.phase])
 
   const reset = useCallback(() => {
     if (active.current) return false
