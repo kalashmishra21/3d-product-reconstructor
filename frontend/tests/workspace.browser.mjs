@@ -16,6 +16,7 @@ const pending = new Map()
 let authenticated = true
 let healthStatus = 'connected'
 const runtimeErrors = []
+const reactKeyWarnings = []
 const interceptionErrors = []
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const id = ++nextId
@@ -56,6 +57,12 @@ socket.addEventListener('message', (event) => {
     data.error ? task.reject(new Error(data.error.message)) : task.resolve(data.result)
   }
   if (data.method === 'Runtime.exceptionThrown') runtimeErrors.push(data.params.exceptionDetails.text)
+  if (data.method === 'Runtime.consoleAPICalled') {
+    const message = (data.params.args || []).map((arg) => String(arg.value ?? arg.description ?? '')).join(' ')
+    if (/Encountered two children with the same key|Each child in a list should have a unique key prop/i.test(message)) {
+      reactKeyWarnings.push(message)
+    }
+  }
   if (data.method === 'Fetch.requestPaused') {
     const { requestId, request } = data.params
     const isAuth = new URL(request.url).pathname === '/src/lib/auth.js'
@@ -130,6 +137,7 @@ try {
     assert.equal(await evaluate("!!document.querySelector('.dash-layout')"), false)
   }
   assert.deepEqual(runtimeErrors, [])
+  assert.deepEqual(reactKeyWarnings, [], 'workspace routes must not emit React list-key warnings')
   assert.deepEqual(interceptionErrors, [])
   console.log('PASS all protected routes redirect without session; no runtime errors')
 } finally {

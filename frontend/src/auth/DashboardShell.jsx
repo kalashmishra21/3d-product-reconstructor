@@ -4,11 +4,13 @@ import { signOut } from '../lib/auth'
 import { useAuth } from './AuthProvider'
 import { useBackendHealth } from '../lib/useBackendHealth'
 import { WorkspaceLayout } from '../dashboard/WorkspaceLayout'
+import { useReconstructionJob } from '../jobs/ReconstructionJobProvider.jsx'
 
 export function DashboardShell({ children }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const health = useBackendHealth()
+  const { stopForSignOut } = useReconstructionJob()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
 
@@ -16,6 +18,7 @@ export function DashboardShell({ children }) {
     setPending(true)
     setError('')
     try {
+      await stopForSignOut()
       await signOut()
       navigate('/login', { replace: true })
     } catch (failure) {

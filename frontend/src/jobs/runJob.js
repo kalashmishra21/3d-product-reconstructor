@@ -27,6 +27,11 @@ export async function runReconstruction(snapshot, services, { signal, onEvent = 
     onEvent({ type: 'persisting', id: row.id, mesh, diagnostic })
     return await retrySave(snapshot, mesh, row.id, services, { signal, onEvent, diagnostic })
   } catch (error) {
+    if (signal?.aborted) {
+      await interruptLiveJob(row.id, services)
+      onEvent({ type: 'interrupted', id: row.id, message: 'Reconstruction interrupted.' })
+      throw error
+    }
     if (mesh) {
       error.kind = 'persistence'
       error.mesh = mesh
@@ -38,6 +43,13 @@ export async function runReconstruction(snapshot, services, { signal, onEvent = 
     }
     throw error
   }
+}
+
+/** Best-effort compare-and-set while the owner's Supabase session still exists. */
+export async function interruptLiveJob(id, services) {
+  if (!id) return null
+  try { return await services.patchReconstruction(id, { status: 'interrupted' }, { expectedStatus: 'processing' }) }
+  catch { return null }
 }
 
 /** Persistence-only retry never touches Pixel2Mesh. */

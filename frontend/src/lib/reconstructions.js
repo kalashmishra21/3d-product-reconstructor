@@ -65,7 +65,7 @@ export async function listReconstructions({ userId, status, search = '', offset 
   if (status && status !== 'all') {
     query = status === 'failed' ? query.in('status', ['failed', 'interrupted']) : query.eq('status', status)
   }
-  const safeSearch = String(search).normalize('NFKC').replace(/[^\p{L}\p{N} -]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 80)
+  const safeSearch = String(search).normalize('NFKC').replace(/[^\p{L}\p{N}._ -]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 80)
   if (safeSearch) query = query.or(`object_name.ilike.%${safeSearch}%,source_filename.ilike.%${safeSearch}%`)
   const start = Math.max(0, Math.trunc(offset))
   const count = Math.min(50, Math.max(1, Math.trunc(limit)))

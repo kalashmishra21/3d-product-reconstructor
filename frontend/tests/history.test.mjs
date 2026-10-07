@@ -38,3 +38,10 @@ test('History status and safe search apply before pagination', async () => {
   assert.ok(calls.findIndex(([action]) => action === 'or') < calls.findIndex(([action]) => action === 'range'))
   assert.deepEqual(calls.find(([action]) => action === 'range'), ['range', 0, 9])
 })
+
+test('History keeps meaningful source-filename punctuation in search', async () => {
+  const { client, calls } = clientWithTrace()
+  await listReconstructions({ userId: USER, search: '02.png' }, { client })
+  assert.equal(calls.find(([action]) => action === 'or')[1],
+    'object_name.ilike.%02.png%,source_filename.ilike.%02.png%')
+})

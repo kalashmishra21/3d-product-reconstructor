@@ -27,3 +27,15 @@ export async function loadSavedResult(id, services = {}) {
   }
   return { row, mesh, sourceUrl, sourceError, artifactError }
 }
+
+/** Re-sign the short-lived private source URL without reloading the mesh or running inference. */
+export async function refreshSavedSource(saved, services = {}) {
+  if (!saved?.row?.source_path) return saved
+  const sign = services.signedImageUrl ?? signedImageUrl
+  try {
+    const sourceUrl = await sign('reconstruction-artifacts', saved.row.source_path)
+    return { ...saved, sourceUrl, sourceError: false }
+  } catch {
+    return { ...saved, sourceError: true }
+  }
+}

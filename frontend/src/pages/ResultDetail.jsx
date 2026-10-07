@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Arrow } from '../components/Icons'
 import { useReconstructionJob } from '../jobs/ReconstructionJobProvider.jsx'
-import { loadSavedResult } from '../lib/resultDetail.js'
+import { loadSavedResult, refreshSavedSource } from '../lib/resultDetail.js'
 import { interruptStaleReconstruction } from '../lib/reconstructions.js'
 import { classifyProcessing, STALE_AFTER_MS } from '../jobs/stale.js'
 import { downloadPrivate } from '../lib/storage.js'
@@ -43,6 +43,18 @@ export default function ResultDetail() {
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [id, liveJobPhase])
+
+  useEffect(() => {
+    if (!saved?.row?.source_path) return undefined
+    let active = true
+    const timer = window.setInterval(() => {
+      refreshSavedSource(saved).then((updated) => {
+        if (active) setSaved((current) => current?.row?.id === updated.row.id
+          ? { ...current, sourceUrl: updated.sourceUrl, sourceError: updated.sourceError } : current)
+      })
+    }, 90_000)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [saved?.row?.id, saved?.row?.source_path])
 
   function onTabKey(event) {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return

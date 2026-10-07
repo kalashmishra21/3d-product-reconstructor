@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { loadSavedResult } from '../src/lib/resultDetail.js'
+import { loadSavedResult, refreshSavedSource } from '../src/lib/resultDetail.js'
 
 const id = '22222222-2222-4222-8222-222222222222'
 const row = { id, status: 'low_volume', source_path: 'owner/result/source.png', mesh_json_path: 'owner/result/stage3.json' }
@@ -40,4 +40,19 @@ test('corrupt private geometry remains unavailable without losing the saved row'
   assert.equal(result.row, row)
   assert.equal(result.mesh, null)
   assert.equal(result.artifactError, true)
+})
+
+test('refreshing an expiring source URL preserves loaded raw mesh without inference', async () => {
+  const mesh = { vertices: [[1, 2, 3]] }
+  const saved = { row, mesh, sourceUrl: 'old', sourceError: false }
+  const refreshed = await refreshSavedSource(saved, {
+    signedImageUrl: async (bucket, path) => {
+      assert.equal(bucket, 'reconstruction-artifacts')
+      assert.equal(path, row.source_path)
+      return 'new'
+    },
+  })
+  assert.equal(refreshed.sourceUrl, 'new')
+  assert.equal(refreshed.mesh, mesh)
+  assert.equal(refreshed.row, row)
 })

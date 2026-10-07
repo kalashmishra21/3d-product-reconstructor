@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { initialJobState, jobReducer } from '../src/jobs/jobReducer.js'
-import { runReconstruction, retrySave } from '../src/jobs/runJob.js'
+import { interruptLiveJob, runReconstruction, retrySave } from '../src/jobs/runJob.js'
 
 const ID = '22222222-2222-4222-8222-222222222222'
 const USER = '11111111-1111-4111-8111-111111111111'
@@ -49,6 +49,28 @@ test('inference failure marks row failed without a placeholder mesh', async () =
   await assert.rejects(runReconstruction(snapshot, services, { onEvent() {} }), /worker trace/)
   assert.equal(calls.at(-1).status, 'failed')
   assert.ok(!JSON.stringify(calls.at(-1)).includes('worker trace'))
+})
+
+test('an intentionally aborted browser-owned job is marked interrupted, not failed', async () => {
+  const controller = new AbortController()
+  const patches = []
+  const events = []
+  const services = {
+    createReconstruction: async () => ({ id: ID }),
+    uploadSource: async () => `${USER}/${ID}/source.png`,
+    patchReconstruction: async (_id, patch) => { patches.push(patch); return patch },
+    inferImage: async () => { controller.abort(); throw new DOMException('Aborted', 'AbortError') },
+  }
+  await assert.rejects(runReconstruction(snapshot, services, { signal: controller.signal,
+    onEvent: event => events.push(event) }), /Aborted/)
+  assert.equal(patches.at(-1).status, 'interrupted')
+  assert.equal(events.at(-1).type, 'interrupted')
+})
+
+test('sign-out interruption compares processing status while auth is still available', async () => {
+  const calls = []
+  await interruptLiveJob(ID, { patchReconstruction: async (...args) => { calls.push(args); return { status: 'interrupted' } } })
+  assert.deepEqual(calls, [[ID, { status: 'interrupted' }, { expectedStatus: 'processing' }]])
 })
 
 test('malformed model output is an inference failure and never persists artifacts', async () => {

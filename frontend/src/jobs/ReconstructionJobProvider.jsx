@@ -9,7 +9,7 @@ import { deriveObjectName, validateMeshResponse } from '../reconstruction/mesh.j
 import { diagnoseMesh } from '../reconstruction/meshDiagnostics.js'
 import { serializeArtifactSet } from '../reconstruction/meshPersistence.js'
 import { initialJobState, jobReducer } from './jobReducer.js'
-import { retrySave, runReconstruction } from './runJob.js'
+import { interruptLiveJob, retrySave, runReconstruction } from './runJob.js'
 
 const JobContext = createContext(null)
 
@@ -148,9 +148,20 @@ export function ReconstructionJobProvider({ userId, children }) {
   }, [services, state, userId])
 
   const dismissNotice = useCallback(() => dispatch({ type: 'dismiss_notice', runId: version.current }), [])
+  const stopForSignOut = useCallback(async () => {
+    const wasActive = active.current
+    const id = state.id
+    version.current += 1
+    controller.current?.abort()
+    controller.current = null
+    active.current = false
+    if (wasActive && id && ['processing', 'persisting'].includes(state.phase)) {
+      await interruptLiveJob(id, services)
+    }
+  }, [state.id, state.phase, services])
   const value = useMemo(() => ({ state, previewUrl, selectFile, setObjectName, saveObjectName, runPreflight,
-    startReconstruction, retryPersistence, reset, dismissNotice }),
-  [state, previewUrl, selectFile, setObjectName, saveObjectName, runPreflight, startReconstruction, retryPersistence, reset, dismissNotice])
+    startReconstruction, retryPersistence, reset, dismissNotice, stopForSignOut }),
+  [state, previewUrl, selectFile, setObjectName, saveObjectName, runPreflight, startReconstruction, retryPersistence, reset, dismissNotice, stopForSignOut])
   return <JobContext.Provider value={value}>{children}</JobContext.Provider>
 }
 

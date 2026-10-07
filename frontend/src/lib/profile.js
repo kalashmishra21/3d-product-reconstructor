@@ -38,5 +38,9 @@ export async function ensureProfile(userId, displayName, { client = supabase } =
   await requireOwnUser(api, userId)
   const current = await loadProfile(userId, { client: api })
   if (current) return current
-  return unwrap(await api.from('profiles').insert({ id: userId, display_name: String(displayName ?? '').trim().slice(0, 80) || null }).select('id,display_name,avatar_path,created_at,updated_at').maybeSingle())
+  const inserted = unwrap(await api.from('profiles').upsert(
+    { id: userId, display_name: String(displayName ?? '').trim().slice(0, 80) || null },
+    { onConflict: 'id', ignoreDuplicates: true },
+  ).select('id,display_name,avatar_path,created_at,updated_at').maybeSingle())
+  return inserted ?? await loadProfile(userId, { client: api })
 }
