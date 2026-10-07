@@ -12,7 +12,6 @@ import { ReconstructionJobProvider } from '../jobs/ReconstructionJobProvider.jsx
 const ReconstructionPage = lazy(() => import('../reconstruction/ReconstructionPage').then((module) => ({ default: module.ReconstructionPage })))
 const History = lazy(() => import('../pages/History'))
 const Model = lazy(() => import('../pages/Model'))
-const Profile = lazy(() => import('../pages/Profile'))
 const ResultDetail = lazy(() => import('../pages/ResultDetail'))
 
 export function ProtectedWorkspace() {
@@ -38,5 +37,4 @@ export function DashboardRoute() { return <Dashboard /> }
 export function ReconstructionRoute() { return <Suspense fallback={<p className="workspace-loading" role="status">Opening your workspace…</p>}><ReconstructionPage /></Suspense> }
 export function HistoryRoute() { return <Suspense fallback={<p className="workspace-loading" role="status">Opening History…</p>}><History /></Suspense> }
 export function ModelRoute() { return <Suspense fallback={<p className="workspace-loading" role="status">Opening model details…</p>}><Model /></Suspense> }
-export function ProfileRoute() { return <Suspense fallback={<p className="workspace-loading" role="status">Opening Profile…</p>}><Profile /></Suspense> }
 export function ResultDetailRoute() { return <Suspense fallback={<p className="workspace-loading" role="status">Opening result…</p>}><ResultDetail /></Suspense> }

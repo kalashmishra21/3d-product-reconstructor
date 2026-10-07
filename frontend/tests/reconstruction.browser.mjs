@@ -185,9 +185,11 @@ try {
   await evaluate("document.querySelector('a[href=\"/model\"]').click()")
   await until("location.pathname === '/model'")
   assert.equal(await evaluate("document.querySelector('.global-job-status').textContent.includes('PROCESSING')"), true, 'inference remains globally active after SPA navigation')
-  await evaluate("document.querySelector('.dash-sidebar a[href=\"/profile\"]').click()")
-  await until("location.pathname === '/profile'")
-  assert.equal(await evaluate("document.querySelector('.global-job-status').textContent.includes('PROCESSING')"), true, 'inference also survives Profile navigation')
+  await evaluate("document.querySelector('.dash-profile-menu summary').click()")
+  await evaluate("Array.from(document.querySelectorAll('.dash-profile-popover button')).find(b => b.textContent.includes('Your profile')).click()")
+  await until("document.querySelector('.profile-dialog')?.open")
+  assert.equal(await evaluate("document.querySelector('.global-job-status').textContent.includes('PROCESSING')"), true, 'inference remains active with Profile overlay')
+  await evaluate("document.querySelector('.profile-dialog-close').click()")
   deferInfer = false
   await send('Fetch.fulfillRequest', { requestId: pendingInferRequest, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: 'application/json' }], body: Buffer.from(mockMesh).toString('base64') })
   pendingInferRequest = null
@@ -207,6 +209,11 @@ try {
   await until("location.pathname.startsWith('/reconstructions/')")
   await until("!!document.querySelector('.result-stage-canvas')")
   assert.equal(await evaluate("!!document.querySelector('.result-stage-canvas')"), true, 'saved Stage-3 geometry reopens from its private artifact')
+  for (const width of [390, 320]) {
+    await viewport(width); await delay(150)
+    assert.equal(await evaluate("document.querySelector('.result-detail-grid .recon-view-panel').getBoundingClientRect().top < document.querySelector('.result-detail-meta').getBoundingClientRect().top"), true, `Saved viewer precedes metadata at ${width}px`)
+  }
+  await viewport(1440)
   await evaluate("document.querySelector('.result-view-tabs [data-view=input]').click()")
   await until("document.querySelector('.source-view img')?.naturalWidth === 8")
   assert.equal(await evaluate("location.pathname.startsWith('/reconstructions/')"), true, 'saved INPUT keeps the result route')
@@ -230,13 +237,15 @@ try {
     assert.equal(await evaluate("document.querySelector('.recon-export-actions button').getBoundingClientRect().width > 100"), true)
   }
   await viewport(1440)
+  assert.equal(await evaluate("Math.abs(document.querySelector('.recon-control-panel').getBoundingClientRect().top - document.querySelector('.recon-view-panel').getBoundingClientRect().top) < 2"), true, 'desktop columns share a top baseline')
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.recon-view-panel')).position"), 'static', 'source/result panel remains in document flow')
   console.log('WORKSPACE_LAYOUT', await evaluate(`JSON.stringify(Object.fromEntries(['.recon-workspace','.recon-control-panel','.recon-view-panel','.result-view-wrap','.result-stage-canvas','.result-view-caption','.recon-view-foot'].map(selector => { const el=document.querySelector(selector), r=el.getBoundingClientRect(), s=getComputedStyle(el); return [selector,{height:r.height,clientHeight:el.clientHeight,scrollHeight:el.scrollHeight,background:s.backgroundColor,minHeight:s.minHeight,alignSelf:s.alignSelf,position:s.position,overflow:s.overflow}]; })))`))
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.recon-workspace')).backgroundColor"), 'rgba(0, 0, 0, 0)', 'Grid must not paint a tall olive filler')
   assert.equal(await evaluate("!!document.querySelector('.recon-volume-note')"), false, 'Healthy TEST fixture has no warning')
   await evaluate("document.querySelector('.recon-view-panel').setAttribute('data-review', 'TEST FIXTURE ? NOT MODEL OUTPUT'); document.querySelector('.recon-view-panel h2').textContent = 'TEST FIXTURE / viewer review'")
   for (const width of [1440, 1280, 1024, 768, 390, 320]) {
     await viewport(width); await delay(350)
-    assert.equal(await evaluate("getComputedStyle(document.querySelector('.recon-view-panel')).position"), width >= 1024 ? 'sticky' : 'static')
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.recon-view-panel')).position"), 'static')
     await evaluate("document.querySelector('.recon-view-panel').scrollIntoView({behavior:'instant', block:'start'})")
     const image = await send('Page.captureScreenshot', { format:'png' })
     await writeFile(new URL(`../.review/stage10-result-${width}.png`, import.meta.url), Buffer.from(image.data, 'base64'))

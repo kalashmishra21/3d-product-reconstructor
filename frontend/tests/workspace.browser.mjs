@@ -89,15 +89,39 @@ try {
   await send('Page.enable'); await send('Runtime.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
   await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/src/lib/auth.js*` }] })
   await visit('/dashboard', '.dash-layout')
+  assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.dash-sidebar .dash-navigation a'), a => a.textContent.trim())"), ['Overview', 'New Reconstruction', 'History', 'Model'])
+  assert.equal(await evaluate("!!document.querySelector('.dash-sidebar-health')"), false)
+  assert.equal(await evaluate("!!document.querySelector('.dash-system')"), false)
+  assert.equal(await evaluate("!!document.querySelector('[aria-label=\"Recheck backend connection\"]')"), false)
+  await evaluate("document.querySelector('.dash-profile-menu summary').click()")
+  await evaluate("Array.from(document.querySelectorAll('.dash-profile-popover button')).find(b => b.textContent.includes('Your profile')).click()")
+  await until("document.querySelector('.profile-dialog')?.open")
+  assert.equal(await evaluate('location.pathname'), '/dashboard', 'account overlay does not navigate')
+  assert.equal(await evaluate("!!document.querySelector('.profile-activity, .profile-statistics')"), false)
+  await evaluate("document.querySelector('.profile-edit-button').click()")
+  assert.equal(await evaluate("!!document.querySelector('#profile-display-name')"), true)
+  assert.equal(await evaluate("!!document.querySelector('.profile-avatar-trigger input[type=file]')"), true)
+  assert.equal(await evaluate("document.querySelector('.profile-avatar-trigger input[type=file]').closest('label')?.classList.contains('profile-avatar-trigger')"), true, 'avatar itself opens the file picker')
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+  await until("!document.querySelector('.profile-dialog')?.open")
+  await evaluate("document.querySelector('.dash-profile-menu summary').click(); Array.from(document.querySelectorAll('.dash-profile-popover button')).find(b => b.textContent.includes('Your profile')).click()")
+  await until("document.querySelector('.profile-dialog')?.open")
+  for (const width of [390, 320]) {
+    await viewport(width); await delay(150)
+    assert.equal(await evaluate("(() => { const r = document.querySelector('.profile-dialog').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.height <= innerHeight })()"), true, `Profile overlay fits ${width}px`)
+  }
+  await evaluate("document.querySelector('.profile-dialog-close').click()")
+  await until("!document.querySelector('.profile-dialog')?.open")
+  await viewport(1440)
   assert.equal(await evaluate("!!document.querySelector('.global-job-status')"), true, 'workspace exposes job status')
   assert.ok(await evaluate('window.__dashboardTest.profileCalls') > 0, 'persistent profile provider loads own row')
   const authLoads = await evaluate('window.__dashboardTest.getUserCalls')
   await evaluate("document.querySelector('a[href=\"/model\"]').click()")
   await until("location.pathname === '/model' && !!document.querySelector('#model-page-title')")
-  await evaluate("document.querySelector('a[href=\"/profile\"]').click()")
-  await until("location.pathname === '/profile' && !!document.querySelector('#profile-title')")
+  await evaluate("document.querySelector('a[href=\"/dashboard\"]').click()")
+  await until("location.pathname === '/dashboard'")
   assert.equal(await evaluate('window.__dashboardTest.getUserCalls'), authLoads, 'SPA navigation retains authenticated parent')
-  for (const [path, selector] of [['/history','#history-title'], ['/model','#model-page-title'], ['/profile','#profile-title'], ['/reconstructions/not-persisted','#result-detail-title']]) {
+  for (const [path, selector] of [['/history','#history-title'], ['/model','#model-page-title'], ['/reconstructions/not-persisted','#result-detail-title']]) {
     await visit(path, selector)
     assert.equal(await evaluate("document.querySelectorAll('main').length"), 1)
     assert.equal(await evaluate("document.querySelectorAll('h1').length"), 1)
@@ -110,18 +134,12 @@ try {
     if (path === '/model') {
       assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.model-evaluation dd'), n => n.textContent)"), ['0.037181','0.000640','0.001722'])
       assert.equal(await evaluate("document.body.innerText.includes('The current checkpoint is retained for integration testing while reconstruction quality is being re-evaluated.')"), true)
-      assert.equal(await evaluate("!!document.querySelector('button[aria-label=\"Explore Stage 02\"]')"), true, 'stage selector is interactive')
-      await evaluate("document.querySelector('button[aria-label=\"Explore Stage 02\"]').click()")
-      assert.equal(await evaluate("document.querySelector('.model-selected-stage').textContent.includes('618')"), true)
+      assert.equal(await evaluate("!!document.querySelector('button[aria-label=\"Explore Stage 02\"]')"), false, 'stages are readable without interaction')
+      assert.equal(await evaluate("document.querySelectorAll('.model-stage-grid .model-stage').length"), 3)
+      assert.equal(await evaluate("document.querySelectorAll('.model-categories li').length"), 13)
+      assert.equal(await evaluate("document.body.innerText.toLowerCase().includes('accuracy')"), false)
       await evaluate("document.querySelector('.model-evaluation summary').click()")
       assert.equal(await evaluate("document.querySelector('.model-evaluation details').open"), true)
-    }
-    if (path === '/profile') {
-      assert.equal(await evaluate("document.querySelector('.profile-details').textContent.includes('layout-test@example.invalid')"), true)
-      assert.equal(await evaluate("document.querySelector('.profile-details').textContent.includes('Google')"), true)
-      assert.equal(await evaluate("document.querySelector('.profile-statistics').textContent.includes('Total reconstructions')"), true)
-      assert.equal(await evaluate("document.querySelector('.profile-statistics').textContent.includes('Low volume')"), true)
-      assert.equal(await evaluate("!!document.querySelector('.profile-edit-button')"), true, 'Profile has an editable saved display name')
     }
     for (const width of [1440,1280,1024,768,390,320]) {
       await viewport(width); await delay(180)
@@ -131,6 +149,8 @@ try {
     }
     console.log(`PASS ${path}: content, semantics and six responsive widths (test-only session)`)
   }
+  await visit('/profile', '.dash-layout')
+  await until("location.pathname === '/dashboard'")
   authenticated = false
   for (const path of ['/dashboard','/reconstruct','/history','/model','/profile','/reconstructions/not-persisted']) {
     await visit(path)

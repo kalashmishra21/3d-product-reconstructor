@@ -16,7 +16,6 @@ const DashboardRoute = authRoute('DashboardRoute')
 const ReconstructionRoute = authRoute('ReconstructionRoute')
 const HistoryRoute = authRoute('HistoryRoute')
 const ModelRoute = authRoute('ModelRoute')
-const ProfileRoute = authRoute('ProfileRoute')
 const ResultDetailRoute = authRoute('ResultDetailRoute')
 
 function PublicArea() {
@@ -60,7 +59,7 @@ export default function App() {
             <Route path="/reconstruct" element={<ReconstructionRoute />} />
             <Route path="/history" element={<HistoryRoute />} />
             <Route path="/model" element={<ModelRoute />} />
-            <Route path="/profile" element={<ProfileRoute />} />
+            <Route path="/profile" element={<Navigate to="/dashboard" replace />} />
             <Route path="/reconstructions/:id" element={<ResultDetailRoute />} />
             <Route path="/result/:id" element={<LegacyResultRedirect />} />
           </Route>
