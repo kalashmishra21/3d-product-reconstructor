@@ -45,17 +45,21 @@ export function WorkspaceLayout({ user, health, pending, error, onLogout, childr
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return window.localStorage.getItem(SIDEBAR_KEY) === 'true' } catch { return false }
   })
-  const toggleSidebar = () => setSidebarCollapsed((previous) => {
-    const next = !previous
-    try { window.localStorage.setItem(SIDEBAR_KEY, String(next)) } catch { /* Preference is optional. */ }
-    return next
-  })
+  const toggleSidebar = (event) => {
+    event.currentTarget.closest('.dash-layout').dataset.motion = event.detail === 0 ? 'instant' : 'pointer'
+    setSidebarCollapsed((previous) => {
+      const next = !previous
+      try { window.localStorage.setItem(SIDEBAR_KEY, String(next)) } catch { /* Preference is optional. */ }
+      return next
+    })
+  }
   const closeDrawer = () => drawer.current?.close()
   const closeProfile = () => profileDialog.current?.close()
   const openProfile = (event) => {
     profileOpener.current = account.current?.contains(event?.currentTarget)
       ? account.current.querySelector('summary') : event?.currentTarget
     account.current?.removeAttribute('open')
+    profileDialog.current.dataset.motion = event?.detail === 0 ? 'instant' : 'pointer'
     profileDialog.current?.showModal()
   }
   useEffect(() => { closeDrawer(); account.current?.removeAttribute('open') }, [pathname])
@@ -80,7 +84,7 @@ export function WorkspaceLayout({ user, health, pending, error, onLogout, childr
     </dialog>
     <main id="main-content" className="dash-main" tabIndex={-1}>
       <header className="dash-header">
-        <div className="dash-header-copy"><p className="dash-kicker">WORKSPACE <span aria-hidden="true">/</span> {contexts[pathname] || 'Result detail'}</p>
+        <div className="dash-header-copy"><p className="dash-kicker">WORKSPACE <span aria-hidden="true">/</span> {contexts[pathname] || (pathname.startsWith('/reconstructions/') ? 'Result detail' : 'Page not found')}</p>
           {pathname === '/dashboard' && <><h1 id="dashboard-title">Welcome back{profile.name ? <>, <span>{profile.name}</span></> : ''}.</h1><p>One image. A new perspective to inspect.</p></>}
         </div>
         <div className="dash-header-controls"><GlobalJobStatus />

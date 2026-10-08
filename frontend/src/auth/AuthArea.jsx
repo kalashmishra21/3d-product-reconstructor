@@ -6,6 +6,7 @@ import { AuthPage } from './AuthPage'
 import { AuthCallback } from './AuthCallback'
 import { DashboardShell } from './DashboardShell'
 import { Dashboard } from '../dashboard/Dashboard'
+import { ComingNext } from '../pages/ComingNext'
 import { ProfileProvider } from '../profile/ProfileProvider.jsx'
 import { ReconstructionJobProvider } from '../jobs/ReconstructionJobProvider.jsx'
 
@@ -14,12 +15,12 @@ const History = lazy(() => import('../pages/History'))
 const Model = lazy(() => import('../pages/Model'))
 const ResultDetail = lazy(() => import('../pages/ResultDetail'))
 
-export function ProtectedWorkspace() {
+export function ProtectedWorkspace({ children }) {
   const { configured, ready, user } = useAuth()
   if (!configured) return <Navigate to="/login" replace />
   if (!ready) return <AuthShell mode="callback"><section className="auth-panel auth-status-panel" role="status">Checking your session…</section></AuthShell>
   if (!user) return <Navigate to="/login" replace />
-  return <ProfileProvider key={user.id} user={user}><ReconstructionJobProvider key={user.id} userId={user.id}><DashboardShell /></ReconstructionJobProvider></ProfileProvider>
+  return <ProfileProvider key={user.id} user={user}><ReconstructionJobProvider key={user.id} userId={user.id}><DashboardShell>{children}</DashboardShell></ReconstructionJobProvider></ProfileProvider>
 }
 
 export default function AuthArea() { return <AuthProvider><Outlet /></AuthProvider> }
@@ -38,3 +39,9 @@ export function ReconstructionRoute() { return <Suspense fallback={<p className=
 export function HistoryRoute() { return <Suspense fallback={<p className="workspace-loading" role="status">Opening History…</p>}><History /></Suspense> }
 export function ModelRoute() { return <Suspense fallback={<p className="workspace-loading" role="status">Opening model details…</p>}><Model /></Suspense> }
 export function ResultDetailRoute() { return <Suspense fallback={<p className="workspace-loading" role="status">Opening result…</p>}><ResultDetail /></Suspense> }
+
+export function NotFoundRoute({ fallback }) {
+  const { ready, user } = useAuth()
+  if (!ready) return <p className="workspace-loading" role="status">Opening your workspace…</p>
+  return user ? <ProtectedWorkspace><ComingNext /></ProtectedWorkspace> : fallback
+}

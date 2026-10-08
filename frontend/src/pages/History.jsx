@@ -44,7 +44,7 @@ export default function History() {
   }, [user.id, filter, search, job.phase, job.id, retryVersion])
 
   return <section className="workspace-page" aria-labelledby="history-title">
-    <div className="workspace-page-heading"><div><p className="dash-kicker">YOUR COLLECTION</p><h1 id="history-title">A place for<br /><em>every perspective.</em></h1><p>Return to your saved source images, real model geometry, and exports.</p></div><Link className="button primary" to="/reconstruct">New Reconstruction <Arrow diagonal /></Link></div>
+    <div className="workspace-page-heading"><div><p className="dash-kicker">YOUR COLLECTION</p><h1 id="history-title">History</h1><p>Return to your saved source images, real model geometry, and exports.</p></div><Link className="button primary" to="/reconstruct">New Reconstruction <Arrow diagonal /></Link></div>
     <div className="history-tools" aria-label="History tools">
       <label className="sr-only" htmlFor="history-search">Search saved reconstructions</label>
       <input id="history-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search objects or source files" />

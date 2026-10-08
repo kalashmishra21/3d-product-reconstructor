@@ -333,3 +333,58 @@
   .recon-view-panel>.recon-export .recon-export-actions{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){.recon-view-panel>.recon-export .recon-export-actions button{transition:none}}
+
+/* Inspection controls: primary view, material, then camera. */
+.recon-heading{padding-bottom:1.5rem}
+.recon-heading h1{font-size:clamp(2rem,3.5vw,3.2rem);line-height:1.12;letter-spacing:-.035em}
+.recon-heading h1 em{color:var(--color-olive)}
+.recon-intro{font-family:var(--font-sans);font-size:.875rem;line-height:1.7}
+.recon-eyebrow{font-family:var(--font-sans);font-size:.66rem;font-weight:600;letter-spacing:.08em}
+.recon-heading .recon-eyebrow{display:none}
+.recon-control-panel,.recon-view-panel,.result-detail-meta{background:var(--surface-glass);border-color:var(--surface-highlight);box-shadow:var(--surface-shadow)}
+.recon-panel-heading h2,.recon-view-header h2{font-size:1.4rem;line-height:1.2;letter-spacing:-.025em}
+.recon-view-header{padding:1rem 1.2rem;gap:.8rem}
+.recon-view-header .recon-eyebrow{margin-bottom:.4rem;font-size:.62rem}
+.recon-live-label{font-size:.62rem;line-height:1.5}
+.recon-panel-intro,.recon-domain-note{font-size:.8rem;line-height:1.7}
+.recon-drop-title{font-family:var(--font-display);font-size:1.15rem}
+.recon-browse,.recon-submit,.recon-infer{font-family:var(--font-sans);font-size:.82rem;font-weight:600;letter-spacing:.01em}
+.recon-object-field input{font-size:1rem}
+.result-view-tabs{padding:.35rem .8rem;gap:.25rem;background:rgba(24,34,25,.6);border-bottom:1px solid var(--surface-highlight);backdrop-filter:none}
+.result-view-tabs button{min-height:2.9rem;min-width:7rem;padding:.55rem 1rem;border:0;border-bottom:2px solid transparent;border-radius:0;font-family:var(--font-display);font-size:.95rem;font-weight:600;letter-spacing:.035em;color:var(--color-muted);background:transparent;box-shadow:none}
+.result-view-tabs button[aria-selected=true]{border-color:var(--color-olive);background:rgba(190,209,161,.07);color:var(--color-ivory);box-shadow:none}
+.result-view-tools{padding:.5rem .85rem;background:var(--surface-glass);gap:.5rem;backdrop-filter:none}
+.result-mode-group{padding:.2rem;background:rgba(15,25,16,.42);border:1px solid rgba(206,222,179,.1);border-radius:5px;gap:.1rem}
+.result-mode-group button{min-height:2.35rem;padding-inline:.65rem;font-size:.8rem;font-weight:600;border:1px solid transparent}
+.result-mode-group button.is-active{background:var(--surface-glass-raised);border-color:var(--surface-highlight);box-shadow:inset 0 1px rgba(244,249,222,.06)}
+.result-fit,.result-reset{font-size:.76rem;min-height:2.75rem;padding-inline:.6rem}
+.result-view-presets{padding:.25rem .85rem;background:rgba(29,41,30,.55);gap:.25rem;border-top:1px solid rgba(206,222,179,.08);backdrop-filter:none}
+.result-view-presets button{min-height:2.5rem;padding-inline:.7rem;font-size:.74rem;border-color:transparent}
+.result-view-presets button[aria-pressed=true]{background:rgba(190,209,161,.09);color:var(--color-olive);border-color:transparent}
+.result-tool-label{font-size:.6rem}
+.result-view-tools>.result-tool-label{display:none}
+.recon-volume-note{padding:.75rem 1.15rem;border-block:0;background:rgba(120,99,64,.08)}
+.recon-volume-note strong{font-family:var(--font-sans);font-size:.77rem;font-weight:600;letter-spacing:0;text-transform:none}
+.recon-volume-note p{font-size:.75rem;line-height:1.5;margin-top:.2rem}
+.recon-volume-note>span{display:none}
+.recon-view-foot,.result-view-caption,.source-view-caption{font-size:.62rem;line-height:1.5;padding:.6rem 1rem}
+.recon-export-heading h3{font-family:var(--font-display);font-size:1.2rem}
+.recon-export-actions button{font-family:var(--font-sans);border-radius:5px}
+.recon-export-actions button strong{font-family:var(--font-display);font-size:1rem;font-weight:600}
+.result-detail-meta{padding:1.25rem}
+.result-detail-meta h2{font-size:1.45rem;overflow-wrap:anywhere}
+.result-detail-meta dl{margin-top:1rem;padding-top:1rem;gap:.9rem}
+.result-detail-sidebar{gap:1rem}
+.result-detail-state{font-size:.875rem;line-height:1.7;min-height:12rem}
+@media(max-width:639px){
+ .result-view-tools{gap:.3rem}
+ .result-camera-group{margin-left:auto}
+ .result-mode-group button{font-size:.74rem;padding-inline:.48rem}
+ .result-fit,.result-reset{padding-inline:.4rem;font-size:.74rem}
+ .result-view-presets .result-stage-label{display:none}
+ .result-view-presets button{min-height:2.75rem}
+ .recon-view-header{flex-wrap:wrap;padding:1rem}
+ .recon-heading h1{font-size:2rem}
+ .result-view-tabs button{min-width:6rem}
+ .source-view-image{padding:1rem}
+}

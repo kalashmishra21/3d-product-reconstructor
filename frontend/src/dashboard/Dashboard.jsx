@@ -15,7 +15,6 @@ export function Dashboard() {
         <div className="dash-process" aria-label="Reconstruction pipeline"><span>Image</span><Arrow /><span>Mesh</span><Arrow /><span>OBJ / GLB</span></div>
       </div><TopologyStudy />
     </section>
-    <nav className="dash-quick-actions" aria-label="Quick actions"><Link to="/reconstruct"><Icon name="plus" />New Reconstruction<Arrow diagonal /></Link><Link to="/history"><Icon name="history" />View History<Arrow diagonal /></Link><Link to="/model"><Icon name="model" />Model Information<Arrow diagonal /></Link></nav>
     {health.state === 'unavailable' && <div className="dash-api-error" role="alert"><span>The reconstruction service is unavailable right now.</span><button type="button" onClick={health.retry}>Retry connection</button></div>}
     <div className="dash-lower-grid">
       <section className="dash-recent" aria-labelledby="recent-title"><div className="dash-section-heading"><div><p className="dash-kicker">YOUR COLLECTION</p><h2 id="recent-title">Your reconstructions</h2></div></div>
