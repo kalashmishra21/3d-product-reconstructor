@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { safeWorkspaceNext } from '../auth/safeWorkspaceNext.js'
 
 const env = import.meta.env ?? {}
 const url = env.VITE_SUPABASE_URL?.trim()
@@ -55,7 +56,7 @@ export async function signUpWithEmail({ name, email, password }) {
 
 export async function signInWithGoogle(next = '/dashboard') {
   const redirect = new URL('/auth/callback', window.location.origin)
-  if (next === '/dashboard') redirect.searchParams.set('next', next)
+  redirect.searchParams.set('next', safeWorkspaceNext(next))
   return unwrap(await requireAuthClient().signInWithOAuth({
     provider: 'google',
     options: { redirectTo: redirect.toString() },

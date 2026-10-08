@@ -41,6 +41,7 @@ export function WorkspaceLayout({ user, health, pending, error, onLogout, childr
   const trigger = useRef(null)
   const account = useRef(null)
   const profileDialog = useRef(null)
+  const profileOpener = useRef(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return window.localStorage.getItem(SIDEBAR_KEY) === 'true' } catch { return false }
   })
@@ -51,7 +52,12 @@ export function WorkspaceLayout({ user, health, pending, error, onLogout, childr
   })
   const closeDrawer = () => drawer.current?.close()
   const closeProfile = () => profileDialog.current?.close()
-  const openProfile = () => { account.current?.removeAttribute('open'); profileDialog.current?.showModal() }
+  const openProfile = (event) => {
+    profileOpener.current = account.current?.contains(event?.currentTarget)
+      ? account.current.querySelector('summary') : event?.currentTarget
+    account.current?.removeAttribute('open')
+    profileDialog.current?.showModal()
+  }
   useEffect(() => { closeDrawer(); account.current?.removeAttribute('open') }, [pathname])
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)')
@@ -89,7 +95,7 @@ export function WorkspaceLayout({ user, health, pending, error, onLogout, childr
       {children}
       <footer className="dash-footer"><span>RECONSTRUCT / IMAGE TO FORM</span><Link to="/model">Pixel2Mesh · integration checkpoint</Link></footer>
     </main>
-    <dialog ref={profileDialog} className="profile-dialog" aria-labelledby="profile-title" onClose={() => account.current?.querySelector('summary')?.focus()} onClick={(event) => { if (event.target === event.currentTarget) closeProfile() }}>
+    <dialog ref={profileDialog} className="profile-dialog" aria-labelledby="profile-title" onClose={() => requestAnimationFrame(() => profileOpener.current?.focus())} onClick={(event) => { if (event.target === event.currentTarget) closeProfile() }}>
       <button type="button" className="profile-dialog-close" aria-label="Close profile" onClick={closeProfile}><Icon name="close" /></button>
       <Profile key={user.id} user={user} profile={profile} />
     </dialog>

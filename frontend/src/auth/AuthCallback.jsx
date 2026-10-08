@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Arrow } from '../components/Icons'
 import { exchangeAuthCode } from '../lib/auth'
 import { useAuth } from './AuthProvider'
+import { safeWorkspaceNext } from './safeWorkspaceNext.js'
 
 // React Strict Mode can replay effects; an OAuth code must be exchanged only once.
 const exchanges = new Map()
@@ -22,7 +23,7 @@ export function AuthCallback() {
     const params = new URLSearchParams(window.location.search)
     const code = params.get('code')
     const flowId = params.get('sb_flow_id')
-    const next = params.get('next') === '/reset-password' ? '/reset-password' : '/dashboard'
+    const next = params.get('next') === '/reset-password' ? '/reset-password' : safeWorkspaceNext(params.get('next'))
     const providerError = params.get('error_description') || params.get('error')
     if (providerError) { setError(providerError); return }
     if (!code) { setError('No authentication code was returned. Please start sign-in again.'); return }
