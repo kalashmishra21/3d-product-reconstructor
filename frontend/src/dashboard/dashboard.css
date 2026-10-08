@@ -333,3 +333,58 @@
 @media(min-width:768px){.model-categories{grid-template-columns:15rem minmax(0,1fr)}}
 @media(max-width:639px){.profile-dialog{padding:1.4rem}.model-pipeline{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.profile-avatar-hover{transition:none}}
+
+/* A compact, readable navigation rail with a persistent account escape hatch. */
+.dash-sidebar{background:rgba(29,40,29,.9);border-color:rgba(205,220,178,.16);box-shadow:inset -1px 0 rgba(239,245,217,.04),18px 0 42px rgba(5,12,6,.12)}
+.dash-brand-row{display:flex;align-items:center;justify-content:space-between;gap:.3rem;min-width:0}
+.dash-brand{min-width:0;justify-content:flex-start;gap:.55rem;font-size:1.45rem;font-weight:650;letter-spacing:-.065em;line-height:1.1}
+.dash-brand>svg{width:1.7rem;height:1.95rem}
+.dash-brand-name{white-space:nowrap}
+.dash-sidebar-caption{margin-top:.55rem;font-size:.6rem;letter-spacing:.13em;line-height:1.5;color:var(--color-muted)}
+.dash-sidebar-collapse{display:grid;flex:none;width:2.75rem;height:2.75rem;place-items:center;border:1px solid rgba(205,220,178,.18);border-radius:.55rem;color:var(--color-olive);transition:background .18s,border-color .18s}
+.dash-sidebar-collapse svg{width:1rem;height:1rem;transform:rotate(90deg)}
+.dash-sidebar-collapse:hover,.dash-sidebar-collapse:focus-visible{border-color:rgba(205,220,178,.38);background:rgba(130,153,112,.13)}
+.dash-sidebar-collapse:focus-visible,.dash-sidebar-user:focus-visible,.dash-signout:focus-visible,.dash-navigation a:focus-visible{outline:2px solid var(--color-olive);outline-offset:2px}
+.dash-navigation{margin-top:2.6rem;gap:.35rem}
+.dash-navigation a{min-height:3rem;font-size:.875rem;font-weight:560;letter-spacing:-.01em;color:#d1d8c7}
+.dash-navigation svg{width:1.25rem;height:1.25rem;stroke-width:1.65}
+.dash-navigation a[aria-current=page]{border-color:rgba(212,224,183,.26);background:rgba(114,139,101,.19);color:var(--color-ivory);box-shadow:inset 0 1px rgba(249,252,228,.08),0 8px 22px rgba(4,11,5,.16);backdrop-filter:blur(10px)}
+.dash-sidebar-bottom{margin-top:auto;padding-top:1.25rem;border-top:1px solid rgba(205,220,178,.15)}
+.dash-sidebar-user{display:flex;width:100%;min-height:3.2rem;align-items:center;gap:.7rem;padding:.25rem;border:1px solid transparent;border-radius:.65rem;text-align:left;color:var(--color-ivory);transition:background .18s,border-color .18s}
+.dash-sidebar-user:hover{border-color:rgba(205,220,178,.17);background:rgba(111,139,100,.12)}
+.dash-sidebar-user strong{font-size:.83rem;font-weight:600}
+.dash-sidebar-user>span:last-child>span{font-size:.7rem;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-signout{margin-top:.35rem;min-height:2.75rem;padding:0 .55rem;font-size:.79rem;font-weight:550}
+.dash-signout:hover{background:rgba(111,139,100,.12)}
+.dash-profile-popover,.profile-dialog,.dash-collection-callout,.result-detail-meta{box-shadow:inset 0 1px rgba(244,249,222,.09),0 22px 55px rgba(4,10,5,.22)}
+.dash-command{box-shadow:inset 0 1px rgba(244,249,222,.11),0 26px 65px rgba(4,10,5,.18)}
+@media(min-width:768px){
+  .dash-layout{padding-left:15.5rem}
+  .dash-sidebar{width:15.5rem;padding:1.65rem 1rem 1.2rem}
+  .dash-sidebar .dash-nav-label{display:block}
+  .dash-sidebar .dash-navigation a,.dash-sidebar .dash-sidebar-user,.dash-sidebar .dash-signout{justify-content:flex-start}
+  .dash-layout.is-sidebar-collapsed{padding-left:5rem}
+  .is-sidebar-collapsed .dash-sidebar{width:5rem;padding-inline:.65rem}
+  .is-sidebar-collapsed .dash-sidebar .dash-nav-label,.is-sidebar-collapsed .dash-sidebar-caption{display:none}
+  .is-sidebar-collapsed .dash-brand-row{flex-direction:column;gap:.75rem}
+  .is-sidebar-collapsed .dash-brand{justify-content:center}
+  .is-sidebar-collapsed .dash-sidebar-collapse svg{transform:rotate(-90deg)}
+  .is-sidebar-collapsed .dash-navigation{margin-top:1.4rem}
+  .is-sidebar-collapsed .dash-navigation a,.is-sidebar-collapsed .dash-sidebar-user,.is-sidebar-collapsed .dash-signout{justify-content:center;padding-inline:0}
+  .is-sidebar-collapsed .dash-sidebar-bottom{padding-top:.75rem}
+}
+@media(max-width:767px){
+  .dash-drawer .dash-brand-row{display:block}
+  .dash-drawer .dash-brand{justify-content:flex-start}
+  .dash-drawer .dash-navigation a{justify-content:flex-start}
+}
+@media(max-width:639px){
+  .dash-header{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;column-gap:.55rem;row-gap:.45rem;min-height:0;padding-block:.85rem}
+  .dash-header-copy{grid-column:1;grid-row:1;min-width:0}
+  .dash-header-copy .dash-kicker{display:block;font-size:.62rem;line-height:1.35;overflow-wrap:anywhere}
+  .dash-header-controls{display:contents}
+  .dash-header-controls>.global-job-status{grid-column:1/-1;grid-row:2;justify-self:start;max-width:min(100%,16rem)}
+  .dash-header-controls>.dash-profile-menu{grid-column:2;grid-row:1}
+  .dash-header-controls>.dash-mobile-menu{grid-column:3;grid-row:1}
+}
+@media(prefers-reduced-motion:reduce){.dash-sidebar-collapse,.dash-sidebar-user{transition:none}}

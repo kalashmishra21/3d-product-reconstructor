@@ -116,10 +116,10 @@ try {
   await evaluate("document.querySelector('.dash-api-error button').click()")
   await until("!document.querySelector('.dash-api-error')")
   await viewport(1440)
-  await evaluate("window.__dashboardTest.failLogout = true; document.querySelector('.dash-profile-menu summary').click(); document.querySelector('.dash-profile-popover button:last-child').click()")
+  await evaluate("window.__dashboardTest.failLogout = true; document.querySelector('.dash-sidebar .dash-signout').click()")
   await until("!!document.querySelector('.dash-error')")
   assert.equal(await evaluate('location.pathname'), '/dashboard')
-  await evaluate("window.__dashboardTest.failLogout = false; document.querySelector('.dash-profile-menu[open] .dash-profile-popover button:last-child').click()")
+  await evaluate("window.__dashboardTest.failLogout = false; document.querySelector('.dash-profile-menu summary').click(); document.querySelector('.dash-profile-menu[open] .dash-profile-popover button:last-child').click()")
   await until("location.pathname === '/login' && !!document.querySelector('.auth-form')")
   assert.equal(await evaluate('window.__dashboardTest.logoutCalls'), 2)
   authenticated = false
