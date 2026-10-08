@@ -264,3 +264,72 @@
   .source-view-image { height: 330px; }
   .result-view-presets > span { width: 100%; margin: 0; padding: 5px 8px; }
 }
+
+/* Once a result exists, the source controls become a compact companion to the viewer. */
+.recon-page.has-result .recon-heading{padding-bottom:1.25rem}
+.recon-page.has-result .recon-control-panel{padding-block:1.15rem 1.4rem}
+.recon-page.has-result .recon-panel-heading h2{margin-top:.2rem;font-size:1.45rem}
+.recon-page.has-result .recon-drop{min-height:0;flex-direction:row;flex-wrap:wrap;justify-content:space-between;gap:.65rem;margin-top:1rem;padding:.7rem .9rem;text-align:left;border-style:solid}
+.recon-page.has-result .recon-drop-symbol,.recon-page.has-result .recon-drop-copy,.recon-page.has-result .recon-drop-limit{display:none}
+.recon-page.has-result .recon-drop-title{font-size:.84rem;font-weight:550}
+.recon-page.has-result .recon-browse{margin:0;font-size:.78rem}
+.recon-page.has-result .recon-selection{margin-top:1rem;padding-top:.9rem}
+.recon-page.has-result .recon-object-field{margin-top:.75rem}
+.recon-page.has-result .recon-source-label{margin-top:.6rem}
+.recon-page.has-result .recon-selection dl{margin-top:.8rem}
+.recon-page.has-result .recon-ready-compact{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem;margin-top:1rem;padding:.6rem .8rem;border:1px solid rgba(205,220,178,.18);border-radius:.4rem;background:rgba(106,131,95,.1)}
+.recon-page.has-result .recon-ready-compact>span{margin:0;font-size:.7rem}
+.recon-page.has-result .recon-infer{margin-top:1rem}
+.recon-page.has-result .recon-mesh-result{margin-top:1rem;padding-top:1rem}
+.recon-page.has-result .recon-mesh-result>strong{margin-top:.45rem;font-size:1.25rem}
+.recon-page.has-result .recon-mesh-result>strong span{display:inline;font-size:.84rem}
+.recon-page.has-result .recon-mesh-result dl{margin-top:.75rem;padding-top:.7rem;gap:.55rem}
+.recon-page.has-result .recon-timing{margin-top:.75rem;padding-top:.65rem}
+.recon-page.has-result .recon-mesh-result small{margin-top:.65rem}
+.recon-page.has-result .recon-pipeline{margin-top:1rem;padding-top:.5rem}
+.recon-page.has-result .recon-pipeline>p{display:none}
+.recon-page.has-result .recon-pipeline ol{margin-top:0}
+.recon-page.has-result .recon-pipeline li{gap:.15rem;padding:.45rem .8rem}
+.recon-page.has-result .recon-pipeline li strong{font-size:.7rem}
+.recon-control-panel,.recon-view-panel,.result-detail-meta{border-color:rgba(205,220,178,.22);background-color:rgba(34,45,33,.9);box-shadow:inset 0 1px rgba(244,249,222,.09),0 22px 52px rgba(4,10,5,.2)}
+.result-view-tabs,.result-view-tools,.result-view-presets{background:rgba(43,56,40,.64);backdrop-filter:blur(10px)}
+.result-view-tabs{gap:.4rem;padding-block:.5rem}
+.result-view-tabs button{min-height:2.75rem;min-width:6.4rem;border-radius:.4rem;font-family:var(--font-sans);font-size:.9rem;font-weight:600;letter-spacing:-.01em}
+.result-view-tabs button[aria-selected=true]{border-color:rgba(213,225,181,.4);background:rgba(190,209,161,.17);color:var(--color-ivory);box-shadow:inset 0 1px rgba(245,249,222,.1)}
+.result-view-tools{justify-content:flex-start;gap:.55rem;padding-block:.45rem}
+.result-tool-label{flex:none;color:var(--color-muted);font-family:var(--font-mono);font-size:.64rem;letter-spacing:.11em}
+.result-mode-group{gap:.25rem}
+.result-mode-group button,.result-fit,.result-reset,.result-view-presets button{min-height:2.65rem;border-radius:.35rem;font-family:var(--font-sans);font-size:.78rem;font-weight:550;letter-spacing:0;text-transform:none}
+.result-mode-group button.is-active,.result-view-presets button[aria-pressed=true]{border-color:rgba(213,225,181,.34);background:rgba(190,209,161,.17);color:var(--color-ivory);text-decoration:none}
+.result-camera-group{margin-left:auto;gap:.2rem}
+.result-view-presets{gap:.3rem;padding-block:.3rem}
+.result-view-presets .result-tool-label{width:auto;margin:0 .2rem 0 0;padding:0}
+.result-view-presets .result-stage-label{width:auto;margin-left:auto;padding:0;color:var(--color-muted);font-family:var(--font-mono);font-size:.63rem}
+.recon-view-panel>.recon-export{margin:0;padding:1rem 1.2rem 1.15rem;border:0;border-top:1px solid rgba(205,220,178,.2);background:rgba(29,41,30,.72)}
+.recon-view-panel>.recon-export .recon-export-heading{align-items:center;padding:0;border:0}
+.recon-view-panel>.recon-export .recon-export-heading h3{margin-top:.1rem;font-size:1.15rem}
+.recon-view-panel>.recon-export .recon-export-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:.7rem}
+.recon-view-panel>.recon-export .recon-export-actions button{min-height:4.3rem;border:1px solid rgba(205,220,178,.2);border-radius:.45rem;background:rgba(67,84,59,.23);box-shadow:inset 0 1px rgba(244,249,222,.05)}
+.recon-view-panel>.recon-export .recon-export-actions button:hover{border-color:rgba(213,225,181,.43);background:rgba(100,125,89,.25)}
+.recon-view-panel>.recon-export .recon-export-status{margin-top:.55rem;min-height:0}
+.result-detail-sidebar .recon-export{margin-top:0;border:1px solid rgba(205,220,178,.2);border-radius:.45rem;background:rgba(34,45,33,.82);padding:1rem}
+.result-detail-sidebar .recon-export-actions button{min-height:4.25rem}
+@media(min-width:1024px){
+  .result-stage-canvas{height:clamp(360px,32vw,460px)}
+  .source-view-image{height:clamp(330px,32vw,450px)}
+  .result-detail-page .result-stage-canvas{height:clamp(360px,32vw,460px)}
+}
+@media(min-width:1024px) and (max-width:1279px){
+  .result-detail-grid{grid-template-columns:minmax(0,1fr)}
+  .result-detail-sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:1rem}
+  .result-detail-sidebar>.dash-text-link{grid-column:1/-1}
+}
+@media(max-width:639px){
+  .result-stage-canvas,.source-view-image{height:300px}
+  .result-view-tools{gap:.35rem}
+  .result-view-tools>.result-tool-label{width:100%}
+  .result-camera-group{margin-left:0}
+  .result-view-presets .result-stage-label{width:auto;margin-left:auto;padding:0}
+  .recon-view-panel>.recon-export .recon-export-actions{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){.recon-view-panel>.recon-export .recon-export-actions button{transition:none}}
