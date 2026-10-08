@@ -92,6 +92,7 @@ try {
   await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/src/lib/auth.js*` }] })
   await viewport(1440)
   await visit('/dashboard', '.dash-layout')
+  check(await evaluate(`!!document.querySelector('.dash-brand .dash-brand-copy .dash-sidebar-caption')`), 'Brand name and tagline share one lockup')
   check(await evaluate(`document.querySelectorAll('.dashboard-content a[href="/reconstruct"]').length === 1`), 'Overview has one primary reconstruction action')
   await visit('/missing-stage11c-page', '[data-page=not-found]')
   check(await evaluate(`!!document.querySelector('.dash-sidebar') && !document.querySelector('.site-header')`), 'Authenticated 404 retains workspace navigation')
@@ -99,6 +100,8 @@ try {
   check(await evaluate(`document.querySelector('#history-title').textContent === 'History'`), 'History uses a concise heading')
   await visit('/model', '.model-stage-grid')
   check(await evaluate(`document.querySelector('.model-stage-grid').getBoundingClientRect().top < document.querySelector('.model-pipeline').getBoundingClientRect().top`), 'Stage facts precede the quiet pipeline')
+  await visit('/reconstruct', '.recon-page')
+  check(await evaluate(`document.querySelector('.recon-pipeline').compareDocumentPosition(document.querySelector('.recon-workspace')) & Node.DOCUMENT_POSITION_FOLLOWING`), 'Process rail leads the workspace before reconstruction')
   for (const width of [1440, 1280, 1024, 768, 390, 320]) {
     await viewport(width)
     for (const [route, selector] of [['/dashboard','.dash-layout'],['/history','#history-search'],['/model','.model-stage-grid'],['/reconstruct','.recon-page']]) {

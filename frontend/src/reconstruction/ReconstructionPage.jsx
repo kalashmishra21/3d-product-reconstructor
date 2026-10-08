@@ -83,6 +83,15 @@ export function ReconstructionPage() {
         <Link className="workspace-link" to="/model">Model baseline <Arrow diagonal /></Link>
       </div>
 
+      <nav className={'recon-pipeline' + (mesh ? ' is-complete' : '')} aria-label="Reconstruction pipeline">
+        <p className="recon-eyebrow">PROCESS / FOUR STAGES</p>
+        <ol>{steps.map((step, index) => {
+          const complete = index === 0 ? Boolean(selection) : index === 1 ? Boolean(verified) : index === 2 ? Boolean(mesh) : exportAvailable
+          const current = index === 0 ? !selection : index === 1 ? Boolean(selection) && !verified : index === 2 && Boolean(verified) && !mesh
+          return <li key={step} className={complete ? 'is-complete' : current ? 'is-current' : 'is-future'}><span>0{index + 1}</span><strong>{step}</strong><small>{index === 3 && complete ? 'AVAILABLE' : complete ? 'COMPLETE' : current ? 'CURRENT' : 'FUTURE'}</small></li>
+        })}</ol>
+      </nav>
+
       <div className="recon-workspace">
         <section className={'recon-control-panel' + (mesh ? ' has-result' : '')} aria-labelledby="recon-upload-title">
           <div className="recon-panel-heading"><span className="recon-panel-number">01</span><div><p className="recon-eyebrow">SOURCE IMAGE</p><h2 id="recon-upload-title">Select your view.</h2></div></div>
@@ -154,14 +163,6 @@ export function ReconstructionPage() {
         </section>
       </div>
 
-      <nav className={'recon-pipeline' + (mesh ? ' is-complete' : '')} aria-label="Reconstruction pipeline">
-        <p className="recon-eyebrow">PROCESS / FOUR STAGES</p>
-        <ol>{steps.map((step, index) => {
-          const complete = index === 0 ? Boolean(selection) : index === 1 ? Boolean(verified) : index === 2 ? Boolean(mesh) : exportAvailable
-          const current = index === 0 ? !selection : index === 1 ? Boolean(selection) && !verified : index === 2 && Boolean(verified) && !mesh
-          return <li key={step} className={complete ? 'is-complete' : current ? 'is-current' : 'is-future'}><span>0{index + 1}</span><strong>{step}</strong><small>{index === 3 && complete ? 'AVAILABLE' : complete ? 'COMPLETE' : current ? 'CURRENT' : 'FUTURE'}</small></li>
-        })}</ol>
-      </nav>
     </div>
   </div>
 }

@@ -25,10 +25,9 @@ const SIDEBAR_KEY = 'reconstruct.sidebar.collapsed'
 
 function Navigation({ onNavigate, collapsed, onCollapse }) {
   return <>
-    <div className="dash-brand-row"><Link className="dash-brand" to="/dashboard" aria-label="Reconstruct overview" title="Reconstruct overview"><Mark /><span className="dash-brand-name dash-nav-label">reconstruct<span className="text-olive">.</span></span></Link>
+    <div className="dash-brand-row"><Link className="dash-brand" to="/dashboard" aria-label="Reconstruct overview" title="Reconstruct overview"><Mark /><span className="dash-brand-copy dash-nav-label"><span className="dash-brand-name">reconstruct<span className="text-olive">.</span></span><span className="dash-sidebar-caption">SINGLE IMAGE / THREE DIMENSIONS</span></span></Link>
       {onCollapse && <button className="dash-sidebar-collapse" type="button" onClick={onCollapse} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}><Icon name="chevron" /></button>}
     </div>
-    <p className="dash-sidebar-caption dash-nav-label">SINGLE IMAGE / THREE DIMENSIONS</p>
     <nav className="dash-navigation" aria-label="Workspace navigation">{navigation.map(([to, label, icon]) =>
       <NavLink key={to} to={to} end title={label} aria-label={label} onClick={onNavigate}><Icon name={icon} /><span className="dash-nav-label">{label}</span></NavLink>)}</nav>
   </>
