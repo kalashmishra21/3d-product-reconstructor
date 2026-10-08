@@ -16,6 +16,7 @@ const pending = new Map()
 let authenticated = true
 let healthStatus = 'connected'
 const runtimeErrors = []
+const reactKeyWarnings = []
 const interceptionErrors = []
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const id = ++nextId
@@ -26,10 +27,23 @@ const send = (method, params = {}) => new Promise((resolve, reject) => {
 const mockAuth = () => `
   let listener = () => {};
   const user = ${authenticated ? JSON.stringify({ id: 'test-only', email: 'layout-test@example.invalid', user_metadata: { display_name: 'Workspace Test' }, identities: [{ provider: 'google' }], created_at: '2026-01-10T00:00:00Z' }) : 'null'};
-  window.__dashboardTest = { user, logoutCalls: 0, failLogout: false };
+  window.__dashboardTest = { user, logoutCalls: 0, failLogout: false, getUserCalls: 0, profileCalls: 0 };
   export const authConfigured = true;
-  export const supabase = { auth: { onAuthStateChange(callback) { listener = callback; return { data: { subscription: { unsubscribe() {} } } }; } } };
-  export async function getCurrentUser() { return window.__dashboardTest.user; }
+  export const supabase = {
+    auth: {
+      onAuthStateChange(callback) { listener = callback; return { data: { subscription: { unsubscribe() {} } } }; },
+      async getUser() { return { data: { user: window.__dashboardTest.user }, error: null }; },
+    },
+    from(table) {
+      if (table === 'profiles') window.__dashboardTest.profileCalls++;
+      const query = { select() { return this; }, eq() { return this; }, in() { return this; }, or() { return this; }, order() { return this; }, insert() { return this; }, update() { return this; },
+        async range() { return { data: [], error: null }; },
+        async maybeSingle() { return { data: { id: user?.id, display_name: 'Workspace Test', avatar_path: null }, error: null }; },
+        then(resolve) { return Promise.resolve({ count: 0, error: null }).then(resolve); } };
+      return query;
+    },
+  };
+  export async function getCurrentUser() { window.__dashboardTest.getUserCalls++; return window.__dashboardTest.user; }
   export async function getCurrentSession() { return null; }
   export async function signOut() { window.__dashboardTest.logoutCalls++; if(window.__dashboardTest.failLogout) throw new Error('Test sign-out failed'); window.__dashboardTest.user = null; listener('SIGNED_OUT', null); }
   export async function signInWithEmail() { throw new Error('Not available in layout tests'); }
@@ -43,6 +57,12 @@ socket.addEventListener('message', (event) => {
     data.error ? task.reject(new Error(data.error.message)) : task.resolve(data.result)
   }
   if (data.method === 'Runtime.exceptionThrown') runtimeErrors.push(data.params.exceptionDetails.text)
+  if (data.method === 'Runtime.consoleAPICalled') {
+    const message = (data.params.args || []).map((arg) => String(arg.value ?? arg.description ?? '')).join(' ')
+    if (/Encountered two children with the same key|Each child in a list should have a unique key prop/i.test(message)) {
+      reactKeyWarnings.push(message)
+    }
+  }
   if (data.method === 'Fetch.requestPaused') {
     const { requestId, request } = data.params
     const isAuth = new URL(request.url).pathname === '/src/lib/auth.js'
@@ -68,23 +88,77 @@ await mkdir(new URL('../.review/', import.meta.url), { recursive: true })
 try {
   await send('Page.enable'); await send('Runtime.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
   await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/src/lib/auth.js*` }] })
-  for (const [path, selector] of [['/history','#history-title'], ['/model','#model-page-title'], ['/profile','#profile-title'], ['/reconstructions/not-persisted','#result-detail-title']]) {
+  await visit('/dashboard', '.dash-layout')
+  assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.dash-sidebar .dash-navigation a'), a => a.textContent.trim())"), ['Overview', 'New Reconstruction', 'History', 'Model'])
+  assert.equal(await evaluate("!!document.querySelector('.dash-sidebar-bottom .dash-sidebar-user')"), true, 'expanded sidebar restores account identity')
+  assert.equal(await evaluate("!!document.querySelector('.dash-sidebar-bottom .dash-signout')"), true, 'expanded sidebar has direct sign out')
+  assert.equal(await evaluate("!!document.querySelector('.dash-sidebar .dash-navigation a[href=\"/profile\"]')"), false, 'Profile is not a nav destination')
+  assert.equal(await evaluate("document.querySelector('.dash-brand .dash-brand-name')?.textContent"), 'reconstruct.', 'product name has its own brand element')
+  assert.equal(await evaluate("document.querySelector('.dash-sidebar-collapse')?.getAttribute('aria-label')"), 'Collapse sidebar')
+  await evaluate("document.querySelector('.dash-sidebar-collapse').click()")
+  await until("document.querySelector('.dash-layout').classList.contains('is-sidebar-collapsed')")
+  assert.equal(await evaluate("localStorage.getItem('reconstruct.sidebar.collapsed')"), 'true')
+  assert.equal(await evaluate("document.querySelector('.dash-sidebar-collapse').getAttribute('aria-label')"), 'Expand sidebar')
+  assert.equal(await evaluate("document.querySelectorAll('.dash-sidebar .dash-navigation svg').length"), 4)
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.dash-sidebar .dash-nav-label')).display"), 'none', 'collapsed labels do not clip')
+  await send('Page.reload')
+  await until("document.querySelector('.dash-layout')?.classList.contains('is-sidebar-collapsed')")
+  await evaluate("document.querySelector('.dash-sidebar-collapse').click()")
+  await until("!document.querySelector('.dash-layout').classList.contains('is-sidebar-collapsed')")
+  assert.equal(await evaluate("localStorage.getItem('reconstruct.sidebar.collapsed')"), 'false')
+  await evaluate("document.querySelector('.dash-sidebar-user').click()")
+  await until("document.querySelector('.profile-dialog')?.open")
+  await evaluate("document.querySelector('.profile-dialog-close').click()")
+  assert.equal(await evaluate("!!document.querySelector('.dash-sidebar-health')"), false)
+  assert.equal(await evaluate("!!document.querySelector('.dash-system')"), false)
+  assert.equal(await evaluate("!!document.querySelector('[aria-label=\"Recheck backend connection\"]')"), false)
+  await evaluate("document.querySelector('.dash-profile-menu summary').click()")
+  await evaluate("Array.from(document.querySelectorAll('.dash-profile-popover button')).find(b => b.textContent.includes('Your profile')).click()")
+  await until("document.querySelector('.profile-dialog')?.open")
+  assert.equal(await evaluate('location.pathname'), '/dashboard', 'account overlay does not navigate')
+  assert.equal(await evaluate("!!document.querySelector('.profile-activity, .profile-statistics')"), false)
+  await evaluate("document.querySelector('.profile-edit-button').click()")
+  assert.equal(await evaluate("!!document.querySelector('#profile-display-name')"), true)
+  assert.equal(await evaluate("!!document.querySelector('.profile-avatar-trigger input[type=file]')"), true)
+  assert.equal(await evaluate("document.querySelector('.profile-avatar-trigger input[type=file]').closest('label')?.classList.contains('profile-avatar-trigger')"), true, 'avatar itself opens the file picker')
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+  await until("!document.querySelector('.profile-dialog')?.open")
+  await evaluate("document.querySelector('.dash-profile-menu summary').click(); Array.from(document.querySelectorAll('.dash-profile-popover button')).find(b => b.textContent.includes('Your profile')).click()")
+  await until("document.querySelector('.profile-dialog')?.open")
+  for (const width of [390, 320]) {
+    await viewport(width); await delay(150)
+    assert.equal(await evaluate("(() => { const r = document.querySelector('.profile-dialog').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.height <= innerHeight })()"), true, `Profile overlay fits ${width}px`)
+  }
+  await evaluate("document.querySelector('.profile-dialog-close').click()")
+  await until("!document.querySelector('.profile-dialog')?.open")
+  await viewport(1440)
+  assert.equal(await evaluate("!!document.querySelector('.global-job-status')"), true, 'workspace exposes job status')
+  assert.ok(await evaluate('window.__dashboardTest.profileCalls') > 0, 'persistent profile provider loads own row')
+  const authLoads = await evaluate('window.__dashboardTest.getUserCalls')
+  await evaluate("document.querySelector('a[href=\"/model\"]').click()")
+  await until("location.pathname === '/model' && !!document.querySelector('#model-page-title')")
+  await evaluate("document.querySelector('a[href=\"/dashboard\"]').click()")
+  await until("location.pathname === '/dashboard'")
+  assert.equal(await evaluate('window.__dashboardTest.getUserCalls'), authLoads, 'SPA navigation retains authenticated parent')
+  for (const [path, selector] of [['/history','#history-title'], ['/model','#model-page-title'], ['/reconstructions/not-persisted','#result-detail-title']]) {
     await visit(path, selector)
     assert.equal(await evaluate("document.querySelectorAll('main').length"), 1)
     assert.equal(await evaluate("document.querySelectorAll('h1').length"), 1)
     if (!path.startsWith('/reconstructions')) assert.equal(await evaluate(`document.querySelector('.dash-sidebar nav a[aria-current="page"]').getAttribute('href')`), path)
     if (path === '/history') {
-      assert.equal(await evaluate("document.querySelector('#history-search').disabled"), true)
+      await until("!!document.querySelector('.history-empty')")
+      assert.equal(await evaluate("document.querySelector('#history-search').disabled"), false)
       assert.equal(await evaluate("document.querySelector('.history-empty').textContent.includes('No saved reconstructions yet.')"), true)
     }
     if (path === '/model') {
       assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.model-evaluation dd'), n => n.textContent)"), ['0.037181','0.000640','0.001722'])
       assert.equal(await evaluate("document.body.innerText.includes('The current checkpoint is retained for integration testing while reconstruction quality is being re-evaluated.')"), true)
-    }
-    if (path === '/profile') {
-      assert.equal(await evaluate("document.querySelector('.profile-details').textContent.includes('layout-test@example.invalid')"), true)
-      assert.equal(await evaluate("document.querySelector('.profile-details').textContent.includes('Google')"), true)
-      assert.equal(await evaluate("document.querySelector('.profile-statistics').textContent.includes(String.fromCharCode(8212))"), true)
+      assert.equal(await evaluate("!!document.querySelector('button[aria-label=\"Explore Stage 02\"]')"), false, 'stages are readable without interaction')
+      assert.equal(await evaluate("document.querySelectorAll('.model-stage-grid .model-stage').length"), 3)
+      assert.equal(await evaluate("document.querySelectorAll('.model-categories li').length"), 13)
+      assert.equal(await evaluate("document.body.innerText.toLowerCase().includes('accuracy')"), false)
+      await evaluate("document.querySelector('.model-evaluation summary').click()")
+      assert.equal(await evaluate("document.querySelector('.model-evaluation details').open"), true)
     }
     for (const width of [1440,1280,1024,768,390,320]) {
       await viewport(width); await delay(180)
@@ -94,12 +168,15 @@ try {
     }
     console.log(`PASS ${path}: content, semantics and six responsive widths (test-only session)`)
   }
+  await visit('/profile', '.dash-layout')
+  await until("location.pathname === '/dashboard'")
   authenticated = false
   for (const path of ['/dashboard','/reconstruct','/history','/model','/profile','/reconstructions/not-persisted']) {
     await visit(path)
     assert.equal(await evaluate("!!document.querySelector('.dash-layout')"), false)
   }
   assert.deepEqual(runtimeErrors, [])
+  assert.deepEqual(reactKeyWarnings, [], 'workspace routes must not emit React list-key warnings')
   assert.deepEqual(interceptionErrors, [])
   console.log('PASS all protected routes redirect without session; no runtime errors')
 } finally {

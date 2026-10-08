@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { signOut } from '../lib/auth'
 import { useAuth } from './AuthProvider'
 import { useBackendHealth } from '../lib/useBackendHealth'
-import { Dashboard } from '../dashboard/Dashboard'
 import { WorkspaceLayout } from '../dashboard/WorkspaceLayout'
+import { useReconstructionJob } from '../jobs/ReconstructionJobProvider.jsx'
 
 export function DashboardShell({ children }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const health = useBackendHealth()
+  const { stopForSignOut } = useReconstructionJob()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
 
@@ -17,6 +18,7 @@ export function DashboardShell({ children }) {
     setPending(true)
     setError('')
     try {
+      await stopForSignOut()
       await signOut()
       navigate('/login', { replace: true })
     } catch (failure) {
@@ -25,5 +27,5 @@ export function DashboardShell({ children }) {
     }
   }
 
-  return <WorkspaceLayout user={user} health={health} pending={pending} error={error} onLogout={logout}>{children ?? <Dashboard />}</WorkspaceLayout>
+  return <WorkspaceLayout user={user} health={health} pending={pending} error={error} onLogout={logout}>{children ?? <Outlet />}</WorkspaceLayout>
 }

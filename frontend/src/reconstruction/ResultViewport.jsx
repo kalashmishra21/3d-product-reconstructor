@@ -7,7 +7,7 @@ class ViewerBoundary extends Component {
   static getDerivedStateFromError() { return { failed: true } }
   render() { return this.state.failed ? <p className="result-static-state" role="status">The 3D view could not open. Your geometry and exports are still available.</p> : this.props.children }
 }
-export function ResultViewport({ mesh, objectName, onInput }) {
+export function ResultViewport({ mesh, objectName }) {
   const [mode, setMode] = useState('solid')
   const [view, setView] = useState('iso')
   const [fitVersion, setFitVersion] = useState(0)
@@ -15,10 +15,11 @@ export function ResultViewport({ mesh, objectName, onInput }) {
   const modes = [['solid','Solid'], ['wireframe','Wireframe'], ['vertices','Vertices']]
   return <div className="result-view-wrap">
     <div className="result-view-tools" aria-label="Mesh display controls">
-      <div className="result-mode-group" role="group" aria-label="Mesh display mode">{modes.map(([value,label]) => <button key={value} type="button" className={mode === value ? 'is-active' : ''} aria-pressed={mode === value} onClick={() => setMode(value)}>{label}</button>)}<button type="button" onClick={onInput}>Input</button></div>
+      <span className="result-tool-label">DISPLAY</span>
+      <div className="result-mode-group" role="group" aria-label="Mesh display mode">{modes.map(([value,label]) => <button key={value} type="button" className={mode === value ? 'is-active' : ''} aria-pressed={mode === value} onClick={() => setMode(value)}>{label}</button>)}</div>
       <div className="result-camera-group" role="group" aria-label="Camera controls"><button type="button" className="result-fit" onClick={() => setFitVersion(v => v+1)} aria-label="Fit mesh in current view">Fit</button><button type="button" className="result-reset" onClick={() => { setView('iso'); setResetVersion(v => v+1) }} aria-label="Reset to isometric view">Reset</button></div>
     </div>
-    <div className="result-view-presets" role="group" aria-label="Camera view presets">{[['iso','ISO'],['front','Front'],['side','Side'],['top','Top']].map(([value,label]) => <button key={value} type="button" aria-pressed={view === value} onClick={() => { setView(value); setResetVersion(v => v+1) }}>{label}</button>)}<span>{mode.toUpperCase()} / STAGE 03</span></div>
+    <div className="result-view-presets" role="group" aria-label="Camera view presets"><span className="result-tool-label">VIEW</span>{[['iso','ISO'],['front','Front'],['side','Side'],['top','Top']].map(([value,label]) => <button key={value} type="button" aria-pressed={view === value} onClick={() => { setView(value); setResetVersion(v => v+1) }}>{label}</button>)}<span className="result-stage-label">STAGE 03</span></div>
     <div className="result-stage-canvas" role="group" aria-label={`${objectName || 'Reconstructed object'} real Stage-3 mesh. Drag to rotate, scroll or pinch to zoom. Camera presets and Fit are available above.`}>
       <ViewerBoundary mesh={mesh}><Suspense fallback={<p className="result-static-state" role="status">Preparing real Stage-3 geometry…</p>}><ResultMeshScene mesh={mesh} mode={mode} view={view} fitVersion={fitVersion} resetVersion={resetVersion} /></Suspense></ViewerBoundary>
     </div>

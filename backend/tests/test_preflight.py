@@ -1,6 +1,8 @@
 """Preflight checks use generated image bytes and a test-only verified identity."""
 
 from io import BytesIO
+import struct
+import zlib
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,7 +10,7 @@ from PIL import Image, features
 
 from app.auth import verified_user
 from app.main import app
-from app.preflight import MAX_IMAGE_BYTES
+from app.preflight import MAX_IMAGE_BYTES, MAX_IMAGE_PIXELS
 
 
 PATH = "/api/v1/reconstructions/preflight"
@@ -72,6 +74,24 @@ def test_declared_mime_and_decoded_format_must_match(authenticated_client):
 
 def test_fake_image_bytes_are_rejected(authenticated_client):
     assert post_image(authenticated_client, b"not an image").status_code == 422
+
+
+@pytest.mark.parametrize("image_format,mime", [("PNG", "image/png"), ("JPEG", "image/jpeg")])
+def test_corrupted_encoded_images_are_rejected(authenticated_client, image_format, mime):
+    assert post_image(authenticated_client, image_bytes(image_format)[:24], mime).status_code == 422
+
+
+def test_malformed_png_header_is_rejected(authenticated_client):
+    assert post_image(authenticated_client, b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR").status_code == 422
+
+
+def test_pixel_limit_checks_decoded_dimensions_before_loading_pixels(authenticated_client):
+    payload = bytearray(image_bytes("PNG"))
+    width, height = 5001, 5000
+    assert width * height > MAX_IMAGE_PIXELS
+    payload[16:24] = struct.pack(">II", width, height)
+    payload[29:33] = struct.pack(">I", zlib.crc32(payload[12:29]) & 0xFFFFFFFF)
+    assert post_image(authenticated_client, bytes(payload)).status_code == 413
 
 
 def test_oversized_and_empty_uploads_are_rejected(authenticated_client):
