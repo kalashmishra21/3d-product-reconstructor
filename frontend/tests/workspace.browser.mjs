@@ -89,6 +89,8 @@ try {
   await send('Page.enable'); await send('Runtime.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
   await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/src/lib/auth.js*` }] })
   await visit('/dashboard', '.dash-layout')
+  await evaluate("localStorage.setItem('reconstruct.sidebar.collapsed', 'false')")
+  await visit('/dashboard', '.dash-layout')
   assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.dash-sidebar .dash-navigation a'), a => a.textContent.trim())"), ['Overview', 'New Reconstruction', 'History', 'Model'])
   assert.equal(await evaluate("!!document.querySelector('.dash-sidebar-bottom .dash-sidebar-user')"), true, 'expanded sidebar restores account identity')
   assert.equal(await evaluate("!!document.querySelector('.dash-sidebar-bottom .dash-signout')"), true, 'expanded sidebar has direct sign out')

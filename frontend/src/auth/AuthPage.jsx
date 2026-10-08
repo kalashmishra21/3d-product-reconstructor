@@ -5,6 +5,7 @@ import { signInWithEmail, signInWithGoogle, signUpWithEmail, sendPasswordReset, 
 import { authErrorMessage } from '../lib/authError'
 import { validateAuthForm } from '../lib/authValidation'
 import { useAuth } from './AuthProvider'
+import { safeWorkspaceNext } from './safeWorkspaceNext.js'
 
 const copy = {
   login: { kicker: 'WELCOME BACK', title: 'Sign in to your space.', intro: 'Access your reconstruction workspace.', submit: 'Sign in', busy: 'Signing in…' },
@@ -42,12 +43,12 @@ export function AuthPage({ mode }) {
   const [visible, setVisible] = useState(false)
   const [pending, setPending] = useState('')
   const [message, setMessage] = useState(null)
-  const from = location.state?.from?.pathname === '/dashboard' ? location.state.from.pathname : '/dashboard'
+  const from = safeWorkspaceNext(location.state?.from?.pathname)
   const content = copy[mode]
 
   useEffect(() => {
-    if (ready && user && (mode === 'login' || mode === 'signup')) navigate('/dashboard', { replace: true })
-  }, [ready, user, mode, navigate])
+    if (ready && user && (mode === 'login' || mode === 'signup')) navigate(from, { replace: true })
+  }, [ready, user, mode, navigate, from])
 
   const update = (field, value) => {
     setValues((current) => ({ ...current, [field]: value }))

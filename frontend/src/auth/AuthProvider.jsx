@@ -11,17 +11,36 @@ export function AuthProvider({ children }) {
     if (!supabase) return
     let active = true
     let authVersion = 0
+    let checkVersion = 0
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active || event === 'INITIAL_SESSION') return
       authVersion += 1
       setUser(session?.user ?? null)
     })
     const initialVersion = authVersion
+    const initialCheck = ++checkVersion
     getCurrentUser()
-      .then((currentUser) => { if (active && authVersion === initialVersion) setUser(currentUser) })
-      .catch(() => { if (active && authVersion === initialVersion) setUser(null) })
+      .then((currentUser) => { if (active && authVersion === initialVersion && checkVersion === initialCheck) setUser(currentUser) })
+      .catch(() => { if (active && authVersion === initialVersion && checkVersion === initialCheck) setUser(null) })
       .finally(() => { if (active) setReady(true) })
-    return () => { active = false; subscription.unsubscribe() }
+    const verifyOnReturn = () => {
+      if (document.visibilityState === 'hidden') return
+      const observedAuthVersion = authVersion
+      const observedCheck = ++checkVersion
+      getCurrentUser()
+        .then((currentUser) => {
+          if (active && authVersion === observedAuthVersion && checkVersion === observedCheck) setUser(currentUser)
+        })
+        .catch(() => { /* A temporary verification outage must not sign out a known user. */ })
+    }
+    window.addEventListener('focus', verifyOnReturn)
+    document.addEventListener('visibilitychange', verifyOnReturn)
+    return () => {
+      active = false
+      window.removeEventListener('focus', verifyOnReturn)
+      document.removeEventListener('visibilitychange', verifyOnReturn)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const refreshUser = useCallback(async () => {

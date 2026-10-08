@@ -163,6 +163,7 @@
   .coming-page > p:not(.eyebrow) { @apply mx-auto mb-8 max-w-135 text-[17px] leading-[1.8] text-muted; }
   .coming-mark { @apply mx-auto mb-9 h-16 w-14 text-olive; }
   .coming-page .eyebrow { @apply justify-center; }
+  .coming-actions { @apply flex flex-wrap items-center justify-center gap-3; }
 }
 
 /* Canvas-only lighting and reference-image depth. */

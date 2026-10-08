@@ -22,6 +22,7 @@ export default function ResultDetail() {
   const [saved, setSaved] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [retryVersion, setRetryVersion] = useState(0)
   const [view, setView] = useState('mesh')
   const liveJobPhase = job.id === id && ['processing', 'persisting'].includes(job.phase) ? job.phase : null
 
@@ -42,7 +43,7 @@ export default function ResultDetail() {
       .catch(() => { if (active) setError(true) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [id, liveJobPhase])
+  }, [id, liveJobPhase, retryVersion])
 
   useEffect(() => {
     if (!saved?.row?.source_path) return undefined
@@ -82,7 +83,7 @@ export default function ResultDetail() {
     <div className="workspace-page-heading"><div><p className="dash-kicker">SAVED RECONSTRUCTION</p><h1 id="result-detail-title">{row?.object_name || (loading ? 'Opening your result.' : 'Reconstruction result')}</h1><p>Private source and real Stage-3 geometry, saved to your workspace.</p></div><Link className="dash-text-link" to="/history">Back to history <Arrow /></Link></div>
 
     {loading && <p className="result-detail-state" role="status">Opening your saved reconstruction…</p>}
-    {!loading && error && <p className="result-detail-state" role="alert">This result could not be opened. Try again from History.</p>}
+    {!loading && error && <div className="result-detail-state" role="alert"><p>This result could not be opened. Check the connection and try again.</p><button type="button" className="button secondary" onClick={() => setRetryVersion((value) => value + 1)}>Retry loading</button><Link className="dash-text-link" to="/history">Back to History <Arrow /></Link></div>}
     {!loading && !error && !row && <div className="result-detail-state"><h2>Reconstruction not found.</h2><p>This link may not exist or may not belong to this account.</p><Link className="button primary" to="/history">Open History <Arrow diagonal /></Link></div>}
 
     {!loading && !error && row && <div className="result-detail-grid">
@@ -94,9 +95,9 @@ export default function ResultDetail() {
         </div>
         {view === 'mesh' && diagnostic?.degenerate && <div className="recon-volume-note" role="status"><strong>Low-volume reconstruction</strong><p>The current model produced limited geometric depth for this image.</p><span>Raw OBJ / GLB exports remain available.</span></div>}
         {view === 'mesh' && hasResult && <ResultViewport mesh={mesh} objectName={row.object_name} />}
-        {view === 'mesh' && !hasResult && <div className="result-detail-state" role="status">{saved.artifactError ? 'Saved mesh data could not be validated.' : row.status === 'processing' ? 'This reconstruction may still be processing in another browser session.' : row.status === 'failed' ? 'This reconstruction did not complete.' : row.status === 'interrupted' ? 'This browser-owned reconstruction was interrupted. Start a new one with the source image.' : 'No saved mesh is available.'}</div>}
+        {view === 'mesh' && !hasResult && <div className="result-detail-state" role={saved.artifactError ? 'alert' : 'status'}><p>{saved.artifactError ? 'Saved mesh data could not be opened or validated.' : row.status === 'processing' ? 'This reconstruction may still be processing in another browser session.' : row.status === 'failed' ? 'This reconstruction did not complete.' : row.status === 'interrupted' ? 'This browser-owned reconstruction was interrupted. Start a new one with the source image.' : 'No saved mesh is available.'}</p>{saved.artifactError && <button type="button" className="button secondary" onClick={() => setRetryVersion((value) => value + 1)}>Retry loading</button>}</div>}
         {view === 'input' && saved.sourceUrl && <SourceView src={saved.sourceUrl} filename={row.source_filename} width={row.source_width} height={row.source_height} />}
-        {view === 'input' && !saved.sourceUrl && <div className="result-detail-state" role="status">{saved.sourceError ? 'The private source image could not be opened.' : 'No source image is saved for this reconstruction.'}</div>}
+        {view === 'input' && !saved.sourceUrl && <div className="result-detail-state" role={saved.sourceError ? 'alert' : 'status'}><p>{saved.sourceError ? 'The private source image could not be opened.' : 'No source image is saved for this reconstruction.'}</p>{saved.sourceError && <button type="button" className="button secondary" onClick={() => setRetryVersion((value) => value + 1)}>Retry loading</button>}</div>}
         <div className="recon-view-foot"><span>{view === 'mesh' ? 'PERSISTED RAW MODEL GEOMETRY' : 'ORIGINAL PRIVATE SOURCE IMAGE'}</span><span>{hasResult && view === 'mesh' ? `${mesh.vertices_count.toLocaleString()} VERTICES / ${mesh.faces_count.toLocaleString()} FACES` : row.source_filename}</span></div>
       </section>
 
