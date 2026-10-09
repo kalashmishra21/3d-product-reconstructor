@@ -25,10 +25,9 @@ const SIDEBAR_KEY = 'reconstruct.sidebar.collapsed'
 
 function Navigation({ onNavigate, collapsed, onCollapse }) {
   return <>
-    <div className="dash-brand-row"><Link className="dash-brand" to="/dashboard" aria-label="Reconstruct overview" title="Reconstruct overview"><Mark /><span className="dash-brand-name dash-nav-label">reconstruct<span className="text-olive">.</span></span></Link>
+    <div className="dash-brand-row"><Link className="dash-brand" to="/dashboard" aria-label="Reconstruct overview" title="Reconstruct overview"><Mark /><span className="dash-brand-copy dash-nav-label"><span className="dash-brand-name">reconstruct<span className="text-olive">.</span></span><span className="dash-sidebar-caption">SINGLE IMAGE / THREE DIMENSIONS</span></span></Link>
       {onCollapse && <button className="dash-sidebar-collapse" type="button" onClick={onCollapse} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}><Icon name="chevron" /></button>}
     </div>
-    <p className="dash-sidebar-caption dash-nav-label">SINGLE IMAGE / THREE DIMENSIONS</p>
     <nav className="dash-navigation" aria-label="Workspace navigation">{navigation.map(([to, label, icon]) =>
       <NavLink key={to} to={to} end title={label} aria-label={label} onClick={onNavigate}><Icon name={icon} /><span className="dash-nav-label">{label}</span></NavLink>)}</nav>
   </>
@@ -45,17 +44,21 @@ export function WorkspaceLayout({ user, health, pending, error, onLogout, childr
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return window.localStorage.getItem(SIDEBAR_KEY) === 'true' } catch { return false }
   })
-  const toggleSidebar = () => setSidebarCollapsed((previous) => {
-    const next = !previous
-    try { window.localStorage.setItem(SIDEBAR_KEY, String(next)) } catch { /* Preference is optional. */ }
-    return next
-  })
+  const toggleSidebar = (event) => {
+    event.currentTarget.closest('.dash-layout').dataset.motion = event.detail === 0 ? 'instant' : 'pointer'
+    setSidebarCollapsed((previous) => {
+      const next = !previous
+      try { window.localStorage.setItem(SIDEBAR_KEY, String(next)) } catch { /* Preference is optional. */ }
+      return next
+    })
+  }
   const closeDrawer = () => drawer.current?.close()
   const closeProfile = () => profileDialog.current?.close()
   const openProfile = (event) => {
     profileOpener.current = account.current?.contains(event?.currentTarget)
       ? account.current.querySelector('summary') : event?.currentTarget
     account.current?.removeAttribute('open')
+    profileDialog.current.dataset.motion = event?.detail === 0 ? 'instant' : 'pointer'
     profileDialog.current?.showModal()
   }
   useEffect(() => { closeDrawer(); account.current?.removeAttribute('open') }, [pathname])
@@ -80,7 +83,7 @@ export function WorkspaceLayout({ user, health, pending, error, onLogout, childr
     </dialog>
     <main id="main-content" className="dash-main" tabIndex={-1}>
       <header className="dash-header">
-        <div className="dash-header-copy"><p className="dash-kicker">WORKSPACE <span aria-hidden="true">/</span> {contexts[pathname] || 'Result detail'}</p>
+        <div className="dash-header-copy"><p className="dash-kicker">WORKSPACE <span aria-hidden="true">/</span> {contexts[pathname] || (pathname.startsWith('/reconstructions/') ? 'Result detail' : 'Page not found')}</p>
           {pathname === '/dashboard' && <><h1 id="dashboard-title">Welcome back{profile.name ? <>, <span>{profile.name}</span></> : ''}.</h1><p>One image. A new perspective to inspect.</p></>}
         </div>
         <div className="dash-header-controls"><GlobalJobStatus />

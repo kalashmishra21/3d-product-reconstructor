@@ -21,7 +21,8 @@
   --color-danger: #efb29f;
   --radius-panel: 6px;
   --shadow-panel: 0 16px 48px #080f0b24, inset 0 1px 0 #eff6dd08;
-  --font-sans: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Manrope", "Segoe UI", sans-serif;
+  --font-display: "Space Grotesk", "Manrope", sans-serif;
   --font-serif: Georgia, "Times New Roman", serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
@@ -169,3 +170,33 @@
 /* Canvas-only lighting and reference-image depth. */
 .viewport { background: radial-gradient(ellipse at 48% 45%, #35432d 0%, #283224 44%, #252c22 74%); }
 .image-paper { box-shadow: 8px 10px 0 #171e1560; }
+/* Shared product typography and bounded surface levels. */
+:root {
+  --surface-glass: rgba(37, 49, 36, .82);
+  --surface-glass-raised: rgba(44, 57, 42, .94);
+  --studio-base: rgba(31, 42, 31, .92);
+  --studio-elevated: rgba(42, 56, 40, .94);
+  --studio-active: rgba(194, 213, 165, .16);
+  --surface-highlight: rgba(226, 237, 204, .18);
+  --surface-shadow: 0 12px 32px rgba(5, 12, 7, .16), inset 0 1px rgba(244, 249, 222, .06);
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --motion-press: 120ms;
+  --motion-panel: 200ms;
+}
+body { font-feature-settings: "ss01"; }
+button, a, summary { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+input, textarea { caret-color: var(--color-olive); }
+.dash-layout { scrollbar-color: #65715a #20271e; }
+.dash-layout :is(h1,h2,h3) { font-family: var(--font-display); font-weight: 500; letter-spacing: -.035em; text-wrap: balance; }
+.dash-layout :is(h1,h2,h3) em { font-family: inherit; font-style: normal; font-weight: inherit; letter-spacing: inherit; }
+.dash-layout :is(button,.button,summary) { font-family: var(--font-sans); }
+.dash-layout :is(input,textarea,select) { font-size: 1rem; }
+.dash-layout :is(dd,.recon-timing,.source-view-caption) { font-variant-numeric: tabular-nums; }
+@media (hover: hover) and (pointer: fine) {
+  .dash-layout :is(.button,.profile-edit-button,.dash-sidebar-collapse) { transition: transform var(--motion-press) var(--ease-out); }
+  .dash-layout :is(.button,.profile-edit-button,.dash-sidebar-collapse):active { transform: scale(.98); }
+}
+@media (max-width: 767px) {
+  .dash-main { padding-left: max(1rem,env(safe-area-inset-left)); padding-right: max(1rem,env(safe-area-inset-right)); padding-bottom: max(1.25rem,env(safe-area-inset-bottom)); }
+  .dash-layout :is(button,summary) { -webkit-user-select: none; user-select: none; }
+}

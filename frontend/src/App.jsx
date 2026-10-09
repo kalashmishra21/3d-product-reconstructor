@@ -17,6 +17,7 @@ const ReconstructionRoute = authRoute('ReconstructionRoute')
 const HistoryRoute = authRoute('HistoryRoute')
 const ModelRoute = authRoute('ModelRoute')
 const ResultDetailRoute = authRoute('ResultDetailRoute')
+const NotFoundRoute = authRoute('NotFoundRoute')
 
 function PublicArea() {
   const health = useBackendHealth()
@@ -64,8 +65,8 @@ export default function App() {
             <Route path="/result/:id" element={<LegacyResultRedirect />} />
           </Route>
         </Route>
+        <Route path="*" element={<NotFoundRoute fallback={<PublicArea />} />} />
       </Route>
-      <Route path="*" element={<PublicArea />} />
     </Routes>
   </>
 }
