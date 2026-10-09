@@ -12,7 +12,7 @@ export function Header({ health }) {
 }
 
 export function Footer() {
-  return <footer className="site-footer"><Link to="/" className="footer-brand"><Mark />Reconstruct</Link><p>3D Object Reconstruction from Images</p><span>A study in pixels, points &amp; perspective.</span></footer>
+  return <footer className="site-footer"><Link to="/" className="footer-brand"><Mark />Reconstruct</Link><p>3D Object Reconstruction from Images</p><a className="owner-credit" href="https://github.com/kalashmishra21" target="_blank" rel="noopener noreferrer">Project by Kalash Mishra</a></footer>
 }
 
 export function RouteEffects() {

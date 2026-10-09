@@ -158,6 +158,8 @@
   .coming-cta > span { @apply text-[10px] text-muted; }
   .site-footer { @apply flex flex-wrap items-center justify-between gap-5 border-t border-rule pt-7 pb-9 text-[11px] text-muted; }
   .site-footer > span { @apply hidden font-mono text-[10px] xl:block; }
+  .owner-credit { @apply inline-flex min-h-11 items-center text-xs text-muted no-underline transition-colors duration-150; }
+  .owner-credit:hover, .owner-credit:focus-visible { color: var(--color-text-primary); text-decoration: underline; text-underline-offset: 4px; }
   .footer-brand { @apply inline-flex items-center gap-2.5 text-sm tracking-tight text-ivory; }
   .footer-brand svg { @apply h-5 w-4 text-olive; }
   .coming-page { @apply mx-auto min-h-[65vh] max-w-182 py-20 text-center; }
