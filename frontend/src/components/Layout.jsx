@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Arrow, Mark } from './Icons'
-import { BackendStatus } from './BackendStatus'
+import { ThemeToggle } from '../theme/ThemeToggle.jsx'
 
 export function Header({ health }) {
   return <header className="site-header">
     <Link to="/" className="brand" aria-label="Reconstruct home"><Mark /><span>reconstruct<span className="brand-period">.</span></span></Link>
     <nav aria-label="Main navigation"><Link to="/#process">The process</Link><Link to="/#status">Project status</Link><Link to="/login">Sign in</Link></nav>
-    <div className="header-end"><BackendStatus health={health} /><Link className="header-explore" to="/#geometry">Explore 3D <Arrow diagonal /></Link></div>
+    <div className="header-end"><ThemeToggle /><Link className="header-explore" to="/dashboard">Enter studio <Arrow diagonal /></Link></div>
   </header>
 }
 

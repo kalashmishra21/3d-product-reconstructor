@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Arrow, Mark } from '../components/Icons'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import '../styles/auth.css'
+import { ThemeToggle } from '../theme/ThemeToggle.jsx'
 
 const AuthScene = lazy(() => import('./AuthScene'))
 
@@ -55,7 +56,7 @@ export function AuthShell({ mode, wide = false, children }) {
     <div className="auth-content site-wrap">
       <header className="auth-header">
         <Link to="/" className="brand" aria-label="Reconstruct home"><Mark /><span>reconstruct<span className="brand-period">.</span></span></Link>
-        <Link className="auth-home-link" to="/">Back to the experience <Arrow diagonal /></Link>
+        <div className="auth-header-actions"><ThemeToggle /><Link className="auth-home-link" to="/">Back to the experience <Arrow diagonal /></Link></div>
       </header>
       <main id="main-content" tabIndex={-1} className={`auth-main${wide ? ' is-wide' : ''}`}>
         {!wide && <div className="auth-story">

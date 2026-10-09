@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { EdgesGeometry, IcosahedronGeometry, MathUtils } from 'three'
+import { useTheme } from '../theme/ThemeProvider.jsx'
+import { sceneThemes } from '../theme/theme.js'
 
-function Topology({ compact, reducedMotion }) {
+function Topology({ compact, reducedMotion, palette }) {
   const group = useRef(null)
   const pointer = useRef({ x: 0, y: 0 })
   const shape = useMemo(() => new IcosahedronGeometry(1.6, compact ? 1 : 2), [compact])
@@ -27,15 +29,17 @@ function Topology({ compact, reducedMotion }) {
   })
 
   return <group ref={group} position={compact ? [0, 1.48, 0] : [-1.45, 0.12, 0]} rotation={[0.22, -0.32, 0]} scale={compact ? 0.9 : 1.16}>
-    <mesh geometry={shape}><meshPhongMaterial color="#7a906c" emissive="#283f27" emissiveIntensity={0.4} transparent opacity={0.17} shininess={80} depthWrite={false} /></mesh>
-    <lineSegments geometry={edges}><lineBasicMaterial color="#bdd6a0" transparent opacity={0.72} /></lineSegments>
-    <points geometry={shape}><pointsMaterial color="#e5e9c8" transparent opacity={0.78} size={0.018} sizeAttenuation depthWrite={false} /></points>
-    <mesh rotation={[0.7, 0.2, 0]}><torusGeometry args={[2.03, 0.006, 3, 80]} /><meshBasicMaterial color="#799067" transparent opacity={0.42} /></mesh>
-    <mesh rotation={[-0.35, 0.75, 0]}><torusGeometry args={[2.27, 0.004, 3, 80]} /><meshBasicMaterial color="#68805e" transparent opacity={0.3} /></mesh>
+    <mesh geometry={shape}><meshPhongMaterial color={palette.solid} emissive="#283f27" emissiveIntensity={0.4} transparent opacity={0.17} shininess={80} depthWrite={false} /></mesh>
+    <lineSegments geometry={edges}><lineBasicMaterial color={palette.wire} transparent opacity={0.72} /></lineSegments>
+    <points geometry={shape}><pointsMaterial color={palette.points} transparent opacity={0.78} size={0.018} sizeAttenuation depthWrite={false} /></points>
+    <mesh rotation={[0.7, 0.2, 0]}><torusGeometry args={[2.03, 0.006, 3, 80]} /><meshBasicMaterial color={palette.gridCenter} transparent opacity={0.42} /></mesh>
+    <mesh rotation={[-0.35, 0.75, 0]}><torusGeometry args={[2.27, 0.004, 3, 80]} /><meshBasicMaterial color={palette.grid} transparent opacity={0.3} /></mesh>
   </group>
 }
 
 export default function AuthScene({ compact, reducedMotion, visible }) {
+  const { theme } = useTheme()
+  const palette = sceneThemes[theme]
   return <Canvas
     frameloop={visible && !reducedMotion ? 'always' : 'demand'}
     dpr={[1, 1.5]}
@@ -46,7 +50,7 @@ export default function AuthScene({ compact, reducedMotion, visible }) {
     style={{ pointerEvents: 'none' }}
   >
     <ambientLight intensity={0.7} />
-    <pointLight position={[-4, 3, 5]} intensity={25} color="#d1e4ab" />
-    <Topology compact={compact} reducedMotion={reducedMotion} />
+    <pointLight position={[-4, 3, 5]} intensity={25} color={palette.key} />
+    <Topology compact={compact} reducedMotion={reducedMotion} palette={palette} />
   </Canvas>
 }

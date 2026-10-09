@@ -7,6 +7,7 @@ import { useProfile } from '../profile/ProfileProvider.jsx'
 import { GlobalJobStatus } from './GlobalJobStatus.jsx'
 import Profile from '../pages/Profile.jsx'
 import './dashboard.css'
+import { ThemeToggle } from '../theme/ThemeToggle.jsx'
 
 const WorkspaceContext = createContext(null)
 export const useWorkspace = () => useContext(WorkspaceContext)
@@ -86,7 +87,7 @@ export function WorkspaceLayout({ user, health, pending, error, onLogout, childr
         <div className="dash-header-copy"><p className="dash-kicker">WORKSPACE <span aria-hidden="true">/</span> {contexts[pathname] || (pathname.startsWith('/reconstructions/') ? 'Result detail' : 'Page not found')}</p>
           {pathname === '/dashboard' && <><h1 id="dashboard-title">Welcome back{profile.name ? <>, <span>{profile.name}</span></> : ''}.</h1><p>One image. A new perspective to inspect.</p></>}
         </div>
-        <div className="dash-header-controls"><GlobalJobStatus />
+        <div className="dash-header-controls"><GlobalJobStatus /><ThemeToggle />
           <details ref={account} className="dash-profile-menu" onKeyDown={(event) => { if (event.key === 'Escape') { account.current.removeAttribute('open'); account.current.querySelector('summary').focus() } }}>
             <summary aria-label="Account options"><WorkspaceAvatar key={profile.avatar} profile={profile} /><Icon name="chevron" /></summary>
             <div className="dash-profile-popover"><strong>{profile.label}</strong><p>{profile.email}</p><button type="button" onClick={openProfile}>Your profile</button><button type="button" disabled={pending} onClick={onLogout}>{pending ? 'Signing out…' : 'Sign out'}</button></div>
