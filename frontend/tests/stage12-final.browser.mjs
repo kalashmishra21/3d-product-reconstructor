@@ -54,7 +54,18 @@ try {
       assert.ok(capsule, `${theme} ${width}: one landing navigation capsule exists`)
       assert.ok(capsule.radius >= Math.min(capsule.height / 2, 24), `${theme} ${width}: capsule is pill-shaped`)
       assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.landing-nav-capsule a')).map(a => a.textContent.trim().replace(/\\s+/g, ' '))`),
-        ['The process', 'Project status', 'Sign in', 'Enter studio'])
+        ['The process', 'Project status', 'Enter studio'])
+      assert.equal(await evaluate('document.querySelector(".landing-nav-capsule a[href=\\"/login\\"]") === null'), true,
+        `${theme} ${width}: duplicate Sign in navigation is absent`)
+      assert.equal(await evaluate(`(() => {
+        const shell = document.querySelector('.site-header--landing')
+        const surface = document.querySelector('.landing-liquid-surface')
+        const style = getComputedStyle(surface)
+        return getComputedStyle(shell).backgroundColor === 'rgba(0, 0, 0, 0)'
+          && style.backgroundImage !== 'none'
+          && getComputedStyle(surface, '::before').content !== 'none'
+          && getComputedStyle(surface, '::after').content !== 'none'
+      })()`), true, `${theme} ${width}: layered translucent glass is visible`)
       assert.ok(await evaluate('document.querySelector(".landing-nav-capsule .theme-toggle") !== null'))
       assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false, `${theme} ${width}: landing has no horizontal overflow`)
       assert.equal((await geometry('.landing-nav-capsule .header-explore')).visible, true, `${theme} ${width}: Enter studio remains visible`)

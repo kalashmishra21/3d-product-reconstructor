@@ -5,7 +5,7 @@ import { ThemeToggle } from '../theme/ThemeToggle.jsx'
 import { routeRobotsContent } from '../seo/siteMetadata.js'
 
 export function Header({ health, landing = false }) {
-  const navigation = <nav aria-label="Main navigation"><Link to="/#process">The process</Link><Link to="/#status">Project status</Link><Link to="/login">Sign in</Link></nav>
+  const navigation = <nav aria-label="Main navigation"><Link to="/#process">The process</Link><Link to="/#status">Project status</Link></nav>
   const actions = <div className={`header-end${landing ? ' header-end--landing' : ''}`}>
     <div className="header-end-content"><ThemeToggle /><Link className="header-explore" to="/dashboard">Enter studio <Arrow diagonal /></Link></div>
   </div>

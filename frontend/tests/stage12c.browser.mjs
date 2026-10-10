@@ -186,6 +186,7 @@ try {
       renderer:!!window.__liquidGLRenderer__ }
   })()`)
   assert.equal(report.reducedMotion.renderer, false, 'GPU lens stays disabled when reduced motion is requested')
+  assert.equal(report.reducedMotion.backdrop, 'none', 'reduced motion removes the glass backdrop filter')
 
   await send('Emulation.setEmulatedMedia', { features: [] })
   await until("document.querySelector('[data-landing-liquid-surface]')?.dataset.liquidState === 'performance-fallback'")
@@ -213,8 +214,8 @@ try {
   assert.equal(report.seo.canonical, false, 'no unchosen production domain is emitted as canonical')
 
   await evaluate('window.__stage12cSurfaceBeforeRoute = document.querySelector(\'[data-landing-liquid-surface]\'); true')
-  await evaluate(`document.querySelector('.site-header nav a[href="/login"]').click()`)
-  await until("location.pathname === '/login' && document.querySelector('meta[name=robots]')?.content === 'noindex, nofollow'")
+  await evaluate(`document.querySelector('.site-header .header-explore').click()`)
+  await until("['/dashboard','/login'].includes(location.pathname) && document.querySelector('meta[name=robots]')?.content === 'noindex, nofollow'")
   report.reactCleanup = await evaluate('!window.__stage12cSurfaceBeforeRoute?.isConnected')
   assert.equal(report.reactCleanup, true, 'leaving the landing removes its scoped glass surface')
   await send('Page.navigate', { url: origin })
