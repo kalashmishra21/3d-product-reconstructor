@@ -1,71 +1,86 @@
-﻿# 3D Object Reconstruction from Images
+# Reconstruct
 
-A single-image 3D reconstruction project built around a trained Pixel2Mesh model and an authenticated web workspace.
+Reconstruct is a browser-based research workspace for inspecting how a single RGB image is processed into a 3D mesh. It connects the trained Pixel2Mesh model to an authenticated React and Three.js application, with persisted reconstruction records and raw OBJ/GLB exports.
 
-## Current flow
+The current checkpoint is an **integration baseline**. Some real predictions have very low geometric volume. The application shows and saves the model output as produced; reconstruction quality is still under review. The illustrative vessel on the public landing page is a design demo, not a prediction.
 
-`Email / Google sign-in → protected dashboard → image validation → authenticated preflight → Pixel2Mesh inference → real Stage-3 geometry → interactive 3D viewer → OBJ / GLB download`
+## Product
 
-The workspace accepts one JPEG, PNG, or WebP image (up to 10 MB). Users can name the object while keeping the source filename visible; generic filenames are not treated as object labels. After preflight, a persistent CPU worker runs the trained model and returns the final mesh. The Three.js viewer supports **Solid**, **Wireframe**, **Vertices**, and **Input** comparison, with orbit, zoom, and Reset / Fit controls. Users can download the raw Stage-3 mesh as Wavefront OBJ or binary glTF (GLB) using a safe object-based filename. Downloads reuse the inference result; viewer transforms do not alter export coordinates. The GLB has a neutral material, not a fabricated photo texture.
-
-## Preview
-
-| Landing | Authentication |
+| Forest Studio | Ivory Atelier |
 | --- | --- |
-| ![Interactive landing page](assets/readme/landing.png) | ![Login page](assets/readme/login.png) |
+| ![Dark Forest cinematic landing page with illustrative vessel](assets/readme/landing.jpg) | ![Light Ivory cinematic landing page with illustrative vessel](assets/readme/landing-ivory.jpg) |
 
-| Dashboard | New Reconstruction |
+| Workspace overview | Sign in |
 | --- | --- |
-| ![Protected dashboard](assets/readme/dashboard.png) | ![Image input and preflight workspace](assets/readme/reconstruction.png) |
+| ![Authenticated dashboard overview](assets/readme/dashboard.jpg) | ![Email and Google sign-in page](assets/readme/login.jpg) |
 
-**Real Stage-3 result viewer and export**
-
-![Actual Pixel2Mesh mesh, viewer controls, and OBJ/GLB export](assets/readme/result-viewer.png)
-
-## Stack and layout
-
-| Area | Technology |
+| New reconstruction · source inspection | Persisted Stage-3 result · low-volume output shown honestly |
 | --- | --- |
-| Model | Python, PyTorch, Pixel2Mesh |
-| Backend | FastAPI, Supabase JWT verification, Pillow image checks |
-| Frontend | React, JavaScript/JSX, Vite, Tailwind CSS, Axios, three.js with React Three Fiber/Drei |
-| Authentication | Supabase Auth: email/password and Google OAuth |
-| Planned persistence | Supabase PostgreSQL |
+| ![New Reconstruction with the real source image and preflight](assets/readme/reconstruction.jpg) | ![Persisted real Stage-3 result with low-volume status and exports](assets/readme/result-viewer.jpg) |
 
-`backend/` contains the API and tests, `frontend/` the web app, `Pixel2Mesh/` the protected trained model, and `dataset_tools/` research utilities.
+| Saved history | Model explorer |
+| --- | --- |
+| ![History of persisted reconstruction records](assets/readme/history.jpg) | ![Pixel2Mesh stages and measured evaluation metrics](assets/readme/model.jpg) |
 
-## Run locally
+Screenshots show the real application. The landing vessel is explicitly illustrative; the Stage-3 result is real model output and may be low-volume.
 
-From the repository root in PowerShell, use the existing `.venv-p2m` ML environment and a local copy of the trained checkpoint:
+## Architecture and capabilities
 
-```powershell
-python -m venv backend/.venv
-backend/.venv/Scripts/python.exe -m pip install -e "./backend[dev]"
-$env:SUPABASE_URL = "<your Supabase project URL>"
-backend/.venv/Scripts/python.exe -m uvicorn app.main:app --app-dir backend --reload
+```text
+React + Three.js workspace
+  ├─ Supabase Auth (email/password and Google OAuth)
+  ├─ Supabase PostgreSQL + private Storage (profiles and reconstruction artifacts)
+  └─ FastAPI API → validated image → Pixel2Mesh worker → Stage-3 mesh
 ```
 
-In another terminal, run `npm.cmd ci` and `npm.cmd run dev` from `frontend/`, then open `http://127.0.0.1:5173`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in ignored `frontend/.env.local`; use only a publishable key. See [frontend setup](frontend/README.md) for details. FastAPI starts without loading Torch; the `.venv-p2m` worker loads the checkpoint on first inference and reuses it afterward.
+- The authenticated preflight checks actual JPEG, PNG, and WebP image content, dimensions, and size before inference.
+- Pixel2Mesh runs in a persistent local worker environment behind FastAPI. The viewer supports Solid, Wireframe, Vertices, source-image inspection, orbit, camera presets, Fit, and Reset.
+- History and Result Detail reopen user-owned records from Supabase. Private source images and mesh artifacts use authenticated Storage access; mesh coordinates are not stored in PostgreSQL.
+- OBJ and GLB exports are generated from the same raw Stage-3 prediction. Display and camera transforms do not alter saved/exported coordinates, and exporting does not run inference again.
+- The landing includes an interactive, topology-inspired vessel demonstration. It is illustrative and is never substituted for inference output.
+- Forest and Ivory themes persist across public and authenticated pages. The workspace and viewer adapt to desktop and mobile layouts.
+- Public-page metadata, Open Graph fields, SoftwareApplication structured data, and private-route `noindex` behavior provide an SEO foundation. A production domain has not been selected, so no canonical URL or sitemap is published.
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/v1/health` | Public API availability |
-| `GET` | `/api/v1/me` | Identity from a verified Supabase token |
-| `POST` | `/api/v1/reconstructions/preflight` | Authenticated image validation and metadata |
-| `POST` | `/api/v1/reconstructions/infer` | Authenticated real Stage-3 mesh inference |
+## Model reference
 
-## Model baseline
+Pixel2Mesh takes one RGB image, extracts image features with VGG16, then deforms a graph through three mesh stages.
 
-Training is complete. The final checkpoint is local at `Pixel2Mesh/checkpoints/260000_000010.pt`, is Git-ignored, and must not be uploaded.
-
-| Mesh stage | Vertices | Faces |
+| Stage | Vertices | Faces |
 | --- | ---: | ---: |
 | 1 | 156 | 308 |
 | 2 | 618 | 1,232 |
-| 3 (final) | 2,466 | 4,928 |
+| 3 | 2,466 | 4,928 |
 
-Test-set metrics: Chamfer Distance **0.037181**, F1 @ τ **0.000640**, and F1 @ 2τ **0.001722**. These are not accuracy percentages or quality scores for an uploaded image.
+Recorded test-set metrics are Chamfer Distance **0.037181**, F1 @ τ **0.000640**, and F1 @ 2τ **0.001722**. These aggregate measurements are not accuracy percentages and do not predict the quality of an individual image. The current integration checkpoint can produce collapsed or low-volume geometry. Future model-quality recovery and deployment are separate work; no quality improvement or deployed site is claimed here.
 
-## Next
+## Local development
 
-Reconstruction persistence/history, a Supabase storage strategy, and deployment remain to be built. Downloads are local to the current browser session; reconstructions are not yet saved.
+Use the existing backend virtual environment, Pixel2Mesh worker environment, and local checkpoint. Keep local environment files out of Git. The API starter reads only the public `SUPABASE_URL` from ignored `backend/.env.local`; the frontend reads the Supabase project URL and publishable/anon key from ignored `frontend/.env.local`. Never put a service-role key in frontend configuration.
+
+Start FastAPI from the `backend/` directory in one PowerShell terminal:
+
+```powershell
+Set-Location backend
+.\.venv\Scripts\python.exe -m app.local_start
+```
+
+Start Vite in a second terminal:
+
+```powershell
+Set-Location frontend
+npm.cmd ci
+npm.cmd run dev
+```
+
+Open <http://127.0.0.1:5173>. For the first local setup, install backend dependencies from `backend/pyproject.toml` in `backend/.venv`, and configure the separate Pixel2Mesh worker environment as documented by the model setup. FastAPI health and authentication paths do not import Torch; the model worker starts on the first inference request and is reused afterward.
+
+## API
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/health` | API process health; does not indicate model-worker readiness |
+| `GET` | `/api/v1/me` | Current identity from a verified Supabase JWT |
+| `POST` | `/api/v1/reconstructions/preflight` | Authenticated image decoding and validation |
+| `POST` | `/api/v1/reconstructions/infer` | Authenticated Pixel2Mesh Stage-3 inference |
+
+The frontend calls the API through the Vite `/api` proxy during local development. A production host will need an equivalent same-origin API route/proxy and SPA fallback, along with configured authentication redirect origins. Production deployment is not part of the current project state.

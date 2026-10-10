@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const origin = 'http://127.0.0.1:5173'
-const debug = 'http://127.0.0.1:9224'
+const debug = `http://127.0.0.1:${process.env.CDP_PORT || 9224}`
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const target = await (await fetch(`${debug}/json/new?about:blank`, { method: 'PUT' })).json()
 const socket = new WebSocket(target.webSocketDebuggerUrl)
@@ -16,7 +16,13 @@ const pending = new Map()
 let authenticated = true
 let healthStatus = 'connected'
 const runtimeErrors = []
+const consoleErrors = []
+const networkFailures = []
+const requests = new Map()
 const interceptionErrors = []
+const interceptionEvents = []
+const canceledNetworkRequests = new Set()
+const pendingInterceptions = new Set()
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const id = ++nextId
   const timeout = setTimeout(() => { pending.delete(id); reject(new Error(`CDP timed out: ${method}`)) }, 20_000)
@@ -42,12 +48,45 @@ socket.addEventListener('message', (event) => {
     clearTimeout(task.timeout); pending.delete(data.id)
     data.error ? task.reject(new Error(data.error.message)) : task.resolve(data.result)
   }
-  if (data.method === 'Runtime.exceptionThrown') runtimeErrors.push(data.params.exceptionDetails.text)
+  if (data.method === 'Runtime.exceptionThrown') {
+    const details = data.params.exceptionDetails
+    runtimeErrors.push({
+      text: details.text,
+      description: details.exception?.description ?? '',
+      url: details.url ?? '',
+      line: details.lineNumber,
+      column: details.columnNumber,
+      frames: details.stackTrace?.callFrames?.map(({ functionName, url, lineNumber, columnNumber }) => ({ functionName, url, lineNumber, columnNumber })) ?? [],
+    })
+  }
+  if (data.method === 'Runtime.consoleAPICalled' && data.params.type === 'error') {
+    consoleErrors.push(data.params.args.map(({ value, description }) => value ?? description ?? '').join(' '))
+  }
+  if (data.method === 'Network.requestWillBeSent') {
+    const url = new URL(data.params.request.url)
+    if (url.origin === origin) requests.set(data.params.requestId, `${data.params.request.method} ${url.pathname}`)
+  }
+  if (data.method === 'Network.responseReceived' && data.params.response.status >= 400) {
+    networkFailures.push(`${requests.get(data.params.requestId) ?? 'unknown request'}: HTTP ${data.params.response.status}`)
+  }
+  if (data.method === 'Network.loadingFailed' && !data.params.canceled) {
+    networkFailures.push(`${requests.get(data.params.requestId) ?? 'unknown request'}: ${data.params.errorText}`)
+  }
+  if (data.method === 'Network.loadingFailed' && data.params.canceled) {
+    canceledNetworkRequests.add(data.params.requestId)
+    interceptionEvents.push({ event: 'canceled', networkId: data.params.requestId, request: requests.get(data.params.requestId) })
+  }
   if (data.method === 'Fetch.requestPaused') {
     const { requestId, request } = data.params
-    const isAuth = new URL(request.url).pathname === '/src/lib/auth.js'
+    const requestPath = new URL(request.url).pathname
+    interceptionEvents.push({ event: 'paused', requestId, networkId: data.params.networkId, requestPath })
+    const isAuth = requestPath === '/src/lib/auth.js'
     const body = isAuth ? mockAuth() : JSON.stringify({ status: 'ok', service: '3d-reconstruction-api' })
-    send('Fetch.fulfillRequest', { requestId, responseCode: isAuth || healthStatus === 'connected' ? 200 : 503, responseHeaders: [{ name: 'Content-Type', value: isAuth ? 'text/javascript' : 'application/json' }], body: Buffer.from(body).toString('base64') }).catch((error) => interceptionErrors.push(error.message))
+    let fulfillment
+    fulfillment = send('Fetch.fulfillRequest', { requestId, responseCode: isAuth || healthStatus === 'connected' ? 200 : 503, responseHeaders: [{ name: 'Content-Type', value: isAuth || healthStatus === 'connected' ? 'text/javascript' : 'application/json' }], body: Buffer.from(body).toString('base64') })
+      .catch((error) => interceptionErrors.push({ requestId, networkId: data.params.networkId, requestPath, message: error.message }))
+      .finally(() => pendingInterceptions.delete(fulfillment))
+    pendingInterceptions.add(fulfillment)
   }
 })
 const evaluate = async (expression) => {
@@ -57,17 +96,26 @@ const evaluate = async (expression) => {
 }
 const until = async (expression) => {
   for (let attempt = 0; attempt < 120; attempt++) { if (await evaluate(expression)) return; await delay(150) }
-  throw new Error(`Timed out waiting for ${expression}`)
+  const state = await evaluate("({ reduced: matchMedia('(prefers-reduced-motion: reduce)').matches, visibility: document.visibilityState, motion: document.querySelector('.dash-study')?.dataset.motion })").catch(() => null)
+  throw new Error(`Timed out waiting for ${expression}; state=${JSON.stringify(state)}`)
 }
 const viewport = (width) => send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false })
+const settleInterceptions = async () => {
+  while (pendingInterceptions.size) await Promise.allSettled([...pendingInterceptions])
+  await delay(50)
+}
 const visit = async (path = '/dashboard') => {
+  await settleInterceptions()
   await send('Page.navigate', { url: origin + path })
   await until(authenticated && path === '/dashboard' ? "!!document.querySelector('.dash-layout')" : "!!document.querySelector('.auth-form')")
 }
 await mkdir(new URL('../.review/', import.meta.url), { recursive: true })
 try {
-  await send('Page.enable'); await send('Runtime.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
-  await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/src/lib/auth.js*` }] })
+  await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
+  await send('Fetch.enable', { patterns: [
+    { urlPattern: `${origin}/src/lib/auth.js*` },
+    { urlPattern: `${origin}/api/v1/health*` },
+  ] })
   await viewport(1440); await visit()
   await until("getComputedStyle(document.querySelector('.dash-sidebar')).position === 'fixed'")
   await until("!!document.querySelector('#dashboard-title')")
@@ -100,16 +148,21 @@ try {
   await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
   await until("!document.querySelector('.dash-drawer').open")
   await until("document.activeElement === document.querySelector('.dash-mobile-menu')")
-  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+  await send('Emulation.setEmulatedMedia', { media: 'screen', features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+  await until("matchMedia('(prefers-reduced-motion: reduce)').matches")
   await until("document.querySelector('.dash-study').dataset.motion === 'paused'")
   await evaluate("document.querySelector('.dash-study-controls button:last-child').click()")
   assert.equal(await evaluate("document.querySelector('.dash-study-controls button:last-child').getAttribute('aria-pressed')"), 'true')
-  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] })
-  await evaluate("Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange'))")
+  await send('Emulation.setEmulatedMedia', { media: 'screen', features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] })
+  await until("!matchMedia('(prefers-reduced-motion: reduce)').matches")
+  await until("document.querySelector('.dash-study').dataset.motion === 'subtle'")
+  // Native visibilitychange is browser-controlled; exercise the scene's real IntersectionObserver boundary instead.
+  await evaluate("window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' })")
   await until("document.querySelector('.dash-study').dataset.motion === 'paused'")
-  await evaluate("delete document.visibilityState; document.dispatchEvent(new Event('visibilitychange'))")
-  await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/src/lib/auth.js*` }, { urlPattern: `${origin}/api/v1/health*` }] })
+  await evaluate("document.querySelector('.dash-study').scrollIntoView({ block: 'center', behavior: 'instant' })")
+  await until("document.querySelector('.dash-study').dataset.motion === 'subtle'")
   healthStatus = 'unavailable'
+  await settleInterceptions()
   await send('Page.reload')
   await until("!!document.querySelector('.dash-api-error')")
   healthStatus = 'connected'
@@ -126,10 +179,16 @@ try {
   await visit()
   await until("location.pathname === '/login'")
   assert.equal(await evaluate("!!document.querySelector('.dash-layout')"), false)
-  assert.deepEqual(runtimeErrors, [])
-  assert.deepEqual(interceptionErrors, [])
+  assert.deepEqual(runtimeErrors, [], `Browser errors: ${JSON.stringify({ runtimeErrors, consoleErrors, networkFailures }, null, 2)}`)
+  // A navigation can cancel an in-flight health request after Fetch.requestPaused.
+  // Chrome then invalidates only that interception ID; require the matching
+  // Network.loadingFailed(canceled) event before treating it as expected.
+  const unexpectedInterceptionErrors = interceptionErrors.filter(({ networkId, requestPath, message }) =>
+    !(requestPath === '/api/v1/health' && message === 'Invalid InterceptionId.' && canceledNetworkRequests.has(networkId)))
+  assert.deepEqual(unexpectedInterceptionErrors, [], `Interception events: ${JSON.stringify(interceptionEvents)}`)
   console.log('PASS guard, logout success/failure, empty state, API states, drawer focus, display controls, reduced motion; no runtime errors')
 } finally {
+  await settleInterceptions()
   await send('Fetch.disable').catch(() => {})
   socket.close()
   await fetch(`${debug}/json/close/${target.id}`).catch(() => {})

@@ -4,6 +4,7 @@ import { Footer, Header, RouteEffects } from './components/Layout'
 import { Landing } from './pages/Landing'
 import { ComingNext } from './pages/ComingNext'
 import { useBackendHealth } from './lib/useBackendHealth'
+import { LandingLiquidGlass } from './landing/LandingLiquidGlass.jsx'
 
 const AuthArea = lazy(() => import('./auth/AuthArea'))
 const authModule = () => import('./auth/AuthArea')
@@ -23,7 +24,8 @@ function PublicArea() {
   const health = useBackendHealth()
   const { pathname } = useLocation()
   return <div className="site-wrap">
-    <Header health={health} />
+    <Header health={health} landing={pathname === '/'} />
+    {pathname === '/' && <LandingLiquidGlass />}
     <main id="main-content" tabIndex={-1}>
       {pathname === '/' ? <Landing health={health} /> : <ComingNext />}
     </main>

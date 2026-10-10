@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 
 const origin = 'http://127.0.0.1:5173'
-const debug = 'http://127.0.0.1:9224'
+const debug = `http://127.0.0.1:${process.env.CDP_PORT || 9224}`
 const rowId = '22222222-2222-4222-8222-222222222222'
 const ownerId = '11111111-1111-4111-8111-111111111111'
 const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg=='
@@ -33,7 +33,7 @@ socket.addEventListener('message', (event) => {
     const body = `
       const user = { id: '${ownerId}', email: 'test@example.invalid', user_metadata: { display_name: 'Hardening Test' } };
       let listener = () => {};
-      window.__hardening = { listFailures: 1, detailFailures: 2, signedUrls: 0, failSourceSign: 0, verifyError: false, user,
+      window.__hardening = { listFailures: 1, detailFailures: 2, signedUrls: 0, failSourceSign: 0, verifyError: false, getCurrentUserCalls: 0, user,
         expire() { this.user = null; listener('SIGNED_OUT', null); },
         restore() { this.user = user; listener('SIGNED_IN', { user }); } };
       const row = { id: '${rowId}', user_id: user.id, object_name: 'Chair', source_filename: 'chair.png',
@@ -54,7 +54,7 @@ socket.addEventListener('message', (event) => {
         storage: { from() { return { async createSignedUrl() { if (window.__hardening.failSourceSign-- > 0) return { data: null, error: new Error('Offline') }; const count = ++window.__hardening.signedUrls;
           return { data: { signedUrl: count === 1 ? 'data:image/png;base64,broken' : '${png}' }, error: null }; } }; } },
       };
-      export async function getCurrentUser() { if (window.__hardening.verifyError) throw new Error('Network unavailable'); return window.__hardening.user; }
+      export async function getCurrentUser() { window.__hardening.getCurrentUserCalls++; if (window.__hardening.verifyError) throw new Error('Network unavailable'); return window.__hardening.user; }
       export async function getCurrentSession() { return null; }
       export async function signOut() { window.__hardening.expire(); }
       export async function signInWithEmail() { throw new Error('test only'); }
@@ -72,10 +72,13 @@ const evaluate = async (expression) => {
 }
 const until = async (expression) => {
   for (let attempt = 0; attempt < 100; attempt++) { if (await evaluate(expression)) return; await delay(100) }
-  throw new Error(`Timed out waiting for ${expression}`)
+  const state = await evaluate("({ route: location.pathname, signedUrls: window.__hardening?.signedUrls, body: document.body.innerText.slice(-700) })").catch(() => null)
+  throw new Error(`Timed out waiting for ${expression}; state=${JSON.stringify(state)}`)
 }
 try {
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: "window.__focusCallbacks=[];const originalAdd=window.addEventListener;window.addEventListener=function(type,listener,...args){if(type==='focus')window.__focusCallbacks.push(listener);return originalAdd.call(this,type,listener,...args)}" })
   await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable')
+  await send('Page.bringToFront')
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false })
   await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/src/lib/auth.js*` }] })
   await send('Page.navigate', { url: origin + '/history' })
@@ -87,6 +90,7 @@ try {
   }
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false })
   await evaluate("document.querySelector('.history-feedback button').click()")
+  await evaluate("document.querySelector('.history-card')?.scrollIntoView({ block: 'center', behavior: 'instant' })")
   await until("!!document.querySelector('.history-card img') && window.__hardening.signedUrls >= 2")
   await until("document.querySelector('.history-card img').naturalWidth === 1")
   assert.equal(inferRequests.length, 0)
@@ -116,11 +120,13 @@ try {
   assert.equal(await evaluate("document.querySelector('.dash-layout').classList.contains('is-sidebar-collapsed')"), !wasCollapsed)
   assert.equal(await evaluate("Array.from(document.querySelectorAll('.dash-sidebar nav a')).every(link => !!link.getAttribute('aria-label') && !!link.getAttribute('title'))"), true)
   await evaluate("localStorage.setItem('reconstruct.sidebar.collapsed', 'false')")
-  await evaluate("window.__hardening.verifyError = true; window.dispatchEvent(new Event('focus'))")
-  await delay(250)
+  assert.equal(await evaluate('document.visibilityState'), 'visible', 'session recovery is tested while the page is visible')
+  assert.equal(await evaluate("window.__focusCallbacks.some(callback => callback.name === 'verifyOnReturn')"), true, 'AuthProvider registers session revalidation on focus')
+  await evaluate("window.__hardening.verifyError = true; window.__hardening.checkpoint = window.__hardening.getCurrentUserCalls; window.__focusCallbacks.filter(callback => callback.name === 'verifyOnReturn').at(-1).call(window, new Event('focus'))")
+  await until('window.__hardening.getCurrentUserCalls > window.__hardening.checkpoint')
   assert.equal(await evaluate("location.pathname.startsWith('/reconstructions/')"), true, 'transient verification error keeps workspace')
-  await evaluate("window.__hardening.verifyError = false; window.__hardening.user = null; window.dispatchEvent(new Event('focus'))")
-  await until("location.pathname === '/login'")
+  await evaluate("window.__hardening.verifyError = false; window.__hardening.user = null; window.__hardening.checkpoint = window.__hardening.getCurrentUserCalls; window.__focusCallbacks.filter(callback => callback.name === 'verifyOnReturn').at(-1).call(window, new Event('focus'))")
+  await until("window.__hardening.getCurrentUserCalls > window.__hardening.checkpoint && location.pathname === '/login'")
   assert.equal(await evaluate("history.state?.usr?.from?.pathname"), `/reconstructions/${rowId}`)
   await evaluate("window.__hardening.restore()")
   await until(`location.pathname === '/reconstructions/${rowId}'`)

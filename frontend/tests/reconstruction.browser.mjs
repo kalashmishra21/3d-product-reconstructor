@@ -7,11 +7,15 @@ import { fileURLToPath } from 'node:url'
 
 const origin = 'http://127.0.0.1:5173'
 const downloadDirectory = new URL('../.review/stage9-browser/', import.meta.url)
-const target = await (await fetch('http://127.0.0.1:9224/json/new?about:blank', { method: 'PUT' })).json()
+const debug = `http://127.0.0.1:${process.env.CDP_PORT || 9224}`
+const target = await (await fetch(`${debug}/json/new?about:blank`, { method: 'PUT' })).json()
 const socket = new WebSocket(target.webSocketDebuggerUrl)
 await new Promise((resolve, reject) => { socket.addEventListener('open', resolve, { once: true }); socket.addEventListener('error', reject, { once: true }) })
 const pending = new Map()
 const errors = []
+const consoleErrors = []
+const networkFailures = []
+const requestPaths = new Map()
 let serial = 0
 let authenticated = true
 let preflightStatus = 200
@@ -83,7 +87,30 @@ socket.addEventListener('message', (event) => {
     const task = pending.get(result.id); clearTimeout(task.timer); pending.delete(result.id)
     result.error ? task.reject(new Error(result.error.message)) : task.resolve(result.result)
   }
-  if (result.method === 'Runtime.exceptionThrown') errors.push(result.params.exceptionDetails.text)
+  if (result.method === 'Runtime.exceptionThrown') {
+    const details = result.params.exceptionDetails
+    errors.push({
+      text: details.text,
+      description: details.exception?.description ?? '',
+      url: details.url ?? '',
+      line: details.lineNumber,
+      column: details.columnNumber,
+      frames: details.stackTrace?.callFrames?.map(({ functionName, url, lineNumber, columnNumber }) => ({ functionName, url, lineNumber, columnNumber })) ?? [],
+    })
+  }
+  if (result.method === 'Runtime.consoleAPICalled' && result.params.type === 'error') {
+    consoleErrors.push(result.params.args.map(({ value, description }) => value ?? description ?? '').join(' '))
+  }
+  if (result.method === 'Network.requestWillBeSent') {
+    const url = new URL(result.params.request.url)
+    if (url.origin === origin) requestPaths.set(result.params.requestId, `${result.params.request.method} ${url.pathname}`)
+  }
+  if (result.method === 'Network.responseReceived' && result.params.response.status >= 400) {
+    networkFailures.push(`${requestPaths.get(result.params.requestId) ?? 'unknown request'}: HTTP ${result.params.response.status}`)
+  }
+  if (result.method === 'Network.loadingFailed' && !result.params.canceled) {
+    networkFailures.push(`${requestPaths.get(result.params.requestId) ?? 'unknown request'}: ${result.params.errorText}`)
+  }
   if (result.method === 'Fetch.requestPaused') {
     const { requestId, request } = result.params
     const path = new URL(request.url).pathname
@@ -117,7 +144,7 @@ const viewport = (width) => send('Emulation.setDeviceMetricsOverride', { width, 
 await mkdir(new URL('../.review/', import.meta.url), { recursive: true })
 await mkdir(downloadDirectory, { recursive: true })
 try {
-  await send('Page.enable'); await send('Runtime.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
+  await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
   await send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: fileURLToPath(downloadDirectory) })
   await send('Fetch.enable', { patterns: [
     { urlPattern: `${origin}/src/lib/auth.js*` },
@@ -354,7 +381,7 @@ try {
   await visit('/reconstruct', '.auth-form')
   assert.equal(await evaluate('location.pathname'), '/login')
   console.log('PASS preflight UI, error, clear, reduced motion, protected redirect')
-  assert.deepEqual(errors, [])
+  assert.deepEqual(errors, [], `Browser errors: ${JSON.stringify({ errors, consoleErrors, networkFailures }, null, 2)}`)
 } finally {
   await send('Page.close').catch(() => {})
   socket.close()

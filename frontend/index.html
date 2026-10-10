@@ -3,12 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#1b1e1a" />
-    <meta name="description" content="Explore how a single image becomes a three-dimensional mesh. An interactive introduction to Pixel2Mesh reconstruction." />
+    <meta name="theme-color" content="#142019" />
+    <script>
+      // Set the saved studio before CSS and React paint. Storage may be blocked.
+      (() => {
+        let theme;
+        try { theme = localStorage.getItem('reconstruct.theme'); } catch {}
+        if (theme !== 'forest' && theme !== 'ivory') theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'forest' : 'ivory';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme === 'ivory' ? 'light' : 'dark';
+        document.querySelector('meta[name="theme-color"]').content = theme === 'ivory' ? '#eeeade' : '#142019';
+      })();
+    </script>
+    <meta name="description" content="Explore a single-image 3D reconstruction workspace. Inspect Pixel2Mesh geometry and export OBJ or GLB assets." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Reconstruct" />
+    <meta property="og:title" content="Reconstruct — From image to form" />
+    <meta property="og:description" content="Explore a single-image 3D reconstruction workspace. Inspect Pixel2Mesh geometry and export OBJ or GLB assets." />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Reconstruct — From image to form" />
+    <meta name="twitter:description" content="Explore a single-image 3D reconstruction workspace. Inspect Pixel2Mesh geometry and export OBJ or GLB assets." />
+    <meta name="robots" content="index, follow" />
+    <script>
+      // Route-aware indexing must be visible before React mounts. Crawlers are
+      // allowed to fetch SPA paths so they can observe this noindex directive.
+      document.querySelector('meta[name="robots"]').content =
+        window.location.pathname === '/' ? 'index, follow' : 'noindex, nofollow';
+    </script>
     <title>Reconstruct — From image to form</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:ital,wght@1,400;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
