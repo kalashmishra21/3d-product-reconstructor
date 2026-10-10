@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# SPA routes remain crawlable so their noindex meta is observed.
+# Add a Sitemap directive after the production domain is selected.

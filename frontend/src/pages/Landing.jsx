@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../theme/ThemeProvider.jsx'
+import { SOFTWARE_APPLICATION_JSON_LD } from '../seo/siteMetadata.js'
 import '../landing/approvedLanding.css'
 
 // Approved illustrative study. Never used as a real inference fallback.
@@ -63,6 +64,7 @@ export function Landing() {
   const [topology, setTopology] = useState(0)
   const [heroView, setHeroView] = useState('iso')
   return <div className="approved-landing">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_APPLICATION_JSON_LD) }} />
       <section className="p-hero" aria-labelledby="prototype-title">
         <div className="p-hero-copy"><h1 id="prototype-title">A new dimension<br />in <em>perspective.</em></h1><p>A single image is a starting point.<br />Explore its structure. Inspect its geometry.<br />See what takes shape.</p><div className="p-hero-actions"><a className="p-button" href="#workspace">Explore the studio <Icon /></a><Link className="p-quiet-link" to="/reconstruct">Try real reconstruction</Link></div><div className="p-theme-caption"><span className="p-theme-swatch" /><div><strong>{theme === 'forest' ? 'Dark Forest Studio' : 'Light Ivory Atelier'}</strong><span>Two perspectives. One workspace.</span></div></div></div>
         <div className="p-hero-stage"><div className="p-stage-heading"><span>Form study — Ribbed vessel</span><span className="p-mono">01 / 03D</span></div><div className="p-hero-canvas"><Scene theme={theme} topology={topology} view={heroView} /></div><div className="p-source-float"><div><SourceStudy /></div><span>Source study<small>Illustrative image</small></span><Icon /></div><div className="p-stage-controls"><div className="p-reveal-label"><label htmlFor="topology">Reveal the topology</label><output htmlFor="topology" className="p-mono">{topology}%</output></div><input id="topology" type="range" min="0" max="100" value={topology} onChange={e=>setTopology(Number(e.target.value))} /><div className="p-stage-foot"><span>Surface <span aria-hidden="true">→</span> Structure</span><button onClick={()=>setHeroView(v=>v==='iso'?'front':'iso')}><Icon name="orbit" /> {heroView === 'iso' ? 'Front view' : 'Isometric view'}</button></div></div></div>

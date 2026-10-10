@@ -15,7 +15,21 @@
         document.querySelector('meta[name="theme-color"]').content = theme === 'ivory' ? '#eeeade' : '#142019';
       })();
     </script>
-    <meta name="description" content="Explore how a single image becomes a three-dimensional mesh. An interactive introduction to Pixel2Mesh reconstruction." />
+    <meta name="description" content="Explore a single-image 3D reconstruction workspace. Inspect Pixel2Mesh geometry and export OBJ or GLB assets." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Reconstruct" />
+    <meta property="og:title" content="Reconstruct — From image to form" />
+    <meta property="og:description" content="Explore a single-image 3D reconstruction workspace. Inspect Pixel2Mesh geometry and export OBJ or GLB assets." />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Reconstruct — From image to form" />
+    <meta name="twitter:description" content="Explore a single-image 3D reconstruction workspace. Inspect Pixel2Mesh geometry and export OBJ or GLB assets." />
+    <meta name="robots" content="index, follow" />
+    <script>
+      // Route-aware indexing must be visible before React mounts. Crawlers are
+      // allowed to fetch SPA paths so they can observe this noindex directive.
+      document.querySelector('meta[name="robots"]').content =
+        window.location.pathname === '/' ? 'index, follow' : 'noindex, nofollow';
+    </script>
     <title>Reconstruct — From image to form</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

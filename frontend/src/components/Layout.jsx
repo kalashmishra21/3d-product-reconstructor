@@ -2,12 +2,16 @@ import { useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Arrow, Mark } from './Icons'
 import { ThemeToggle } from '../theme/ThemeToggle.jsx'
+import { routeRobotsContent } from '../seo/siteMetadata.js'
 
-export function Header({ health }) {
-  return <header className="site-header">
+export function Header({ health, landing = false }) {
+  return <header className={`site-header${landing ? ' site-header--landing' : ''}`}>
     <Link to="/" className="brand" aria-label="Reconstruct home"><Mark /><span>reconstruct<span className="brand-period">.</span></span></Link>
     <nav aria-label="Main navigation"><Link to="/#process">The process</Link><Link to="/#status">Project status</Link><Link to="/login">Sign in</Link></nav>
-    <div className="header-end"><ThemeToggle /><Link className="header-explore" to="/dashboard">Enter studio <Arrow diagonal /></Link></div>
+    <div className={`header-end${landing ? ' header-end--landing' : ''}`}>
+      {landing && <span className="landing-liquid-surface" data-landing-liquid-surface data-liquid-state="pending" data-liquid-backend="css" aria-hidden="true" />}
+      <div className="header-end-content" data-liquid-ignore={landing ? '' : undefined}><ThemeToggle /><Link className="header-explore" to="/dashboard">Enter studio <Arrow diagonal /></Link></div>
+    </div>
   </header>
 }
 
@@ -19,6 +23,7 @@ export function RouteEffects() {
   const { pathname, hash } = useLocation()
   const previousPath = useRef(pathname)
   useEffect(() => {
+    document.querySelector('meta[name="robots"]')?.setAttribute('content', routeRobotsContent(pathname))
     const titles = {
       '/': 'Reconstruct — From image to form',
       '/login': 'Sign in — Reconstruct',

@@ -206,6 +206,14 @@ input, textarea { caret-color: var(--color-olive); }
 
 /* Shared studio chrome: keep the theme available at every breakpoint. */
 .site-header .header-end { display:flex; margin-left:0; gap:1rem; }
+.site-header--landing { position:sticky; top:0; z-index:50; isolation:isolate; overflow-x:clip; background:color-mix(in srgb,var(--color-background) 84%,transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+.site-header--landing .header-end--landing { position:relative; isolation:isolate; z-index:0; padding:.35rem .55rem; border-radius:999px; }
+.header-end--landing .landing-liquid-surface { position:absolute; inset:0; z-index:0; overflow:hidden; border:1px solid color-mix(in srgb,var(--color-text-primary) 20%,transparent); border-radius:999px; background:color-mix(in srgb,var(--color-surface-elevated) 68%,transparent); box-shadow:0 8px 24px color-mix(in srgb,var(--shadow-color) 76%,transparent),inset 0 1px color-mix(in srgb,var(--color-text-primary) 18%,transparent); -webkit-backdrop-filter:blur(14px) saturate(1.12); backdrop-filter:blur(14px) saturate(1.12); pointer-events:none; }
+.header-end--landing .header-end-content { position:relative; z-index:1; display:flex; align-items:center; gap:1rem; }
+.header-end--landing .theme-toggle { border-color:transparent; background:color-mix(in srgb,var(--color-surface) 55%,transparent); }
+.header-end--landing .header-explore { border-color:color-mix(in srgb,var(--color-text-primary) 16%,transparent); }
+.header-end--landing [data-liquid-ignore] { isolation:isolate; }
+.header-end--landing .landing-liquid-surface[data-liquid-state="ready"][data-liquid-backend="css"] { -webkit-backdrop-filter:blur(15px) saturate(1.16); backdrop-filter:blur(15px) saturate(1.16); }
 .site-header .brand { font-family:var(--font-display); font-size:1.8rem; font-weight:600; letter-spacing:-.065em; }
 .site-header nav a { font-size:.8rem; }
 .button.primary { color:var(--color-on-accent); }
@@ -215,4 +223,16 @@ input, textarea { caret-color: var(--color-olive); }
  .site-header nav { grid-column:1/-1; grid-row:2; width:100%; justify-content:space-between; gap:.75rem; }
  .site-header .header-end { grid-column:2; grid-row:1; }
  .site-header .brand { font-size:1.5rem; gap:.5rem; }
+ .site-header--landing { top:0; }
+ .site-header--landing .header-end--landing { padding:.2rem .3rem; }
+ .header-end--landing .header-end-content { gap:.45rem; }
+ .header-end--landing .header-explore { display:none; }
+}
+@media (max-width: 380px) {
+ .site-header--landing .brand { font-size:1.25rem; }
+ .site-header--landing .brand > svg { width:1.35rem; }
+ .site-header--landing .header-end--landing { padding:.12rem .2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+ .site-header--landing, .header-end--landing .landing-liquid-surface { -webkit-backdrop-filter:none; backdrop-filter:none; }
 }

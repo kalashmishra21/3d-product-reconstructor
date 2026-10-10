@@ -32,12 +32,14 @@ function Vessel({ theme, topology, mode, view, reset }) {
   }, [camera, invalidate, view, reset])
   const light = theme === 'ivory'
   return <>
-    <ambientLight intensity={light ? 1.4 : .7} />
-    <directionalLight position={[3, 5, 4]} intensity={3.5} color="#fff3da" />
-    <directionalLight position={[-4, 2, -1]} intensity={2.2} color="#afc7b1" />
+    <hemisphereLight args={[light ? '#fffaf0' : '#e3ead7', light ? '#72816a' : '#17251b', light ? 1.05 : .82]} />
+    <ambientLight intensity={light ? .48 : .28} />
+    <directionalLight position={[3, 5, 4]} intensity={light ? 2.25 : 1.8} color="#fff3da" />
+    <directionalLight position={[-4, 2, -1]} intensity={light ? 1.25 : 1.05} color="#afc7b1" />
+    <pointLight position={[0, -1.4, 3.8]} intensity={light ? .42 : .72} color={light ? '#c1a77e' : '#d3dcbe'} distance={8} decay={2} />
     <group rotation={[0, -.4, 0]}>
       {mode !== 'vertices' && <mesh geometry={geometry}>
-        <meshStandardMaterial color={light ? '#728b72' : '#bdcaae'} roughness={.43} metalness={.16} side={THREE.DoubleSide} wireframe={mode === 'wireframe'} />
+        <meshPhysicalMaterial color={light ? '#728b72' : '#bdcaae'} roughness={.32} metalness={.12} clearcoat={.34} clearcoatRoughness={.4} side={THREE.DoubleSide} wireframe={mode === 'wireframe'} />
       </mesh>}
       {mode === 'vertices' ? <points geometry={geometry}><pointsMaterial color={light ? '#254c37' : '#e4efd7'} size={.018} sizeAttenuation /></points> : topology > 0 && mode !== 'wireframe' && <mesh geometry={geometry} scale={1.001}>
         <meshBasicMaterial color={light ? '#183f2b' : '#3c5942'} wireframe transparent opacity={topology / 100 * .78} depthWrite={false} />
@@ -50,7 +52,7 @@ function Vessel({ theme, topology, mode, view, reset }) {
 }
 
 export default function StudyScene(props) {
-  return <SceneBoundary><Canvas dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4, 2.1, 5], fov: 36 }} gl={{ antialias: true, alpha: true }} role="img" aria-label="Interactive illustrative ribbed vessel. Drag to orbit; use view buttons for keyboard inspection.">
+  return <SceneBoundary><Canvas dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4, 2.1, 5], fov: 36 }} gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} role="img" aria-label="Interactive illustrative ribbed vessel. Drag to orbit; use view buttons for keyboard inspection.">
     <Vessel {...props} />
   </Canvas></SceneBoundary>
 }
