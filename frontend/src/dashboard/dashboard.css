@@ -646,3 +646,21 @@
  .dash-header-controls>.dash-mobile-menu { grid-column:4; grid-row:1; }
  .dash-header-controls>.global-job-status { grid-column:1/-1; grid-row:2; }
 }
+
+/* Stage 12 final: one restrained glass language for navigation and account. */
+.dash-sidebar { background:color-mix(in srgb,var(--glass-base) 94%,transparent); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); }
+.dash-sidebar-collapse { width:2.5rem; height:2.5rem; border-radius:999px; background:color-mix(in srgb,var(--glass-raised) 66%,transparent); box-shadow:inset 0 1px var(--highlight); }
+.dash-sidebar-collapse:hover { border-color:var(--color-border-strong); background:var(--color-accent-soft); }
+.dash-navigation a { border-radius:999px; transition:background-color 160ms,border-color 160ms,color 160ms,transform 120ms; }
+.dash-navigation a:hover { border-color:var(--color-border); background:color-mix(in srgb,var(--glass-raised) 76%,transparent); }
+.dash-navigation a[aria-current=page] { border-color:var(--color-border-strong); border-radius:999px; background:color-mix(in srgb,var(--glass-raised) 82%,transparent); box-shadow:inset 0 1px var(--highlight),0 7px 20px var(--shadow-color); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+.dash-navigation a[aria-current=page]::before { display:none; }
+.dash-sidebar-user { border-radius:999px; padding:.45rem .65rem; background:color-mix(in srgb,var(--glass-raised) 76%,transparent); box-shadow:inset 0 1px var(--highlight),0 7px 18px var(--shadow-color); }
+.dash-sidebar-user:hover { border-color:var(--color-border-strong); background:var(--glass-raised); }
+.dash-signout { border:1px solid var(--color-border); border-radius:999px; padding-inline:.75rem; background:color-mix(in srgb,var(--glass-raised) 48%,transparent); transition:background-color 160ms,border-color 160ms,color 160ms; }
+.dash-signout:hover { border-color:var(--color-border); background:var(--color-accent-soft); color:var(--color-text-primary); }
+.dash-drawer .dash-navigation a { border-radius:999px; }
+@media(prefers-reduced-motion:reduce) {
+ .dash-navigation a,.dash-signout { transition:none; }
+ .dash-sidebar { -webkit-backdrop-filter:none; backdrop-filter:none; }
+}

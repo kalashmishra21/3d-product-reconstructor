@@ -204,35 +204,61 @@ input, textarea { caret-color: var(--color-olive); }
   .dash-layout :is(button,summary) { -webkit-user-select: none; user-select: none; }
 }
 
-/* Shared studio chrome: keep the theme available at every breakpoint. */
-.site-header .header-end { display:flex; margin-left:0; gap:1rem; }
-.site-header--landing { position:sticky; top:0; z-index:50; isolation:isolate; overflow-x:clip; background:color-mix(in srgb,var(--color-background) 84%,transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
-.site-header--landing .header-end--landing { position:relative; isolation:isolate; z-index:0; padding:.35rem .55rem; border-radius:999px; }
-.header-end--landing .landing-liquid-surface { position:absolute; inset:0; z-index:0; overflow:hidden; border:1px solid color-mix(in srgb,var(--color-text-primary) 20%,transparent); border-radius:999px; background:color-mix(in srgb,var(--color-surface-elevated) 68%,transparent); box-shadow:0 8px 24px color-mix(in srgb,var(--shadow-color) 76%,transparent),inset 0 1px color-mix(in srgb,var(--color-text-primary) 18%,transparent); -webkit-backdrop-filter:blur(14px) saturate(1.12); backdrop-filter:blur(14px) saturate(1.12); pointer-events:none; }
-.header-end--landing .header-end-content { position:relative; z-index:1; display:flex; align-items:center; gap:1rem; }
-.header-end--landing .theme-toggle { border-color:transparent; background:color-mix(in srgb,var(--color-surface) 55%,transparent); }
-.header-end--landing .header-explore { border-color:color-mix(in srgb,var(--color-text-primary) 16%,transparent); }
-.header-end--landing [data-liquid-ignore] { isolation:isolate; }
-.header-end--landing .landing-liquid-surface[data-liquid-state="ready"][data-liquid-backend="css"] { -webkit-backdrop-filter:blur(15px) saturate(1.16); backdrop-filter:blur(15px) saturate(1.16); }
+/* One floating control surface; the expensive GPU lens remains disabled. */
+.site-header .header-end { display:flex; margin-left:0; gap:0; }
+.site-header--landing { position:sticky; top:0; z-index:50; isolation:isolate; background:color-mix(in srgb,var(--color-background) 84%,transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+.landing-nav-capsule { position:relative; isolation:isolate; display:flex; max-width:100%; min-height:58px; border-radius:999px; }
+.landing-nav-capsule .landing-liquid-surface { position:absolute; inset:0; z-index:0; border:1px solid color-mix(in srgb,var(--color-text-primary) 20%,transparent); border-radius:inherit; background:color-mix(in srgb,var(--color-surface-elevated) 68%,transparent); box-shadow:0 8px 24px color-mix(in srgb,var(--shadow-color) 76%,transparent),inset 0 1px color-mix(in srgb,var(--color-text-primary) 18%,transparent); -webkit-backdrop-filter:blur(14px) saturate(1.12); backdrop-filter:blur(14px) saturate(1.12); pointer-events:none; }
+.landing-nav-capsule .landing-liquid-surface[data-liquid-state="ready"][data-liquid-backend="css"] { -webkit-backdrop-filter:blur(15px) saturate(1.16); backdrop-filter:blur(15px) saturate(1.16); }
+.landing-nav-content { position:relative; z-index:1; display:flex; align-items:center; gap:clamp(.25rem,.6vw,.7rem); padding:.42rem .48rem .42rem .62rem; }
+.site-header--landing .landing-nav-content nav { display:flex; width:auto; margin:0; align-items:center; gap:.1rem; }
+.site-header--landing .landing-nav-content nav a { display:inline-flex; min-height:44px; align-items:center; padding:.65rem .72rem; border-radius:999px; color:var(--color-text-secondary); font-size:.8rem; font-weight:550; white-space:nowrap; transition:background-color 160ms,color 160ms; }
+.site-header--landing .landing-nav-content nav a:hover { background:var(--color-accent-soft); color:var(--color-text-primary); }
+.site-header--landing .landing-nav-content nav a:focus-visible { outline:2px solid var(--color-accent); outline-offset:1px; }
+.landing-nav-capsule .header-end-content { display:flex; align-items:center; gap:.25rem; }
+.landing-nav-capsule .theme-toggle { border-color:transparent; border-radius:999px; background:transparent; font-size:.8rem; }
+.landing-nav-capsule .theme-toggle:hover { background:var(--color-accent-soft); }
+.site-header--landing .landing-nav-capsule .header-explore { display:inline-flex; min-height:44px; align-items:center; justify-content:center; gap:.55rem; padding:.65rem 1rem; border:1px solid var(--color-accent); border-radius:999px; background:var(--color-accent); color:var(--color-on-accent); font-size:.8rem; font-weight:700; white-space:nowrap; transition:filter 160ms,transform 120ms; }
+.site-header--landing .landing-nav-capsule .header-explore:hover { filter:brightness(1.08); }
+.site-header--landing .landing-nav-capsule .header-explore:active { transform:scale(.98); }
+.landing-nav-capsule .header-explore svg { width:1rem; height:1rem; }
 .site-header .brand { font-family:var(--font-display); font-size:1.8rem; font-weight:600; letter-spacing:-.065em; }
 .site-header nav a { font-size:.8rem; }
+.dash-header-controls>.theme-toggle { border-radius:999px; border-color:var(--color-border); background:color-mix(in srgb,var(--glass-raised) 74%,transparent); box-shadow:inset 0 1px var(--highlight); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+.dash-header-controls>.theme-toggle:hover { background:var(--color-surface-hover); }
 .button.primary { color:var(--color-on-accent); }
 .button.secondary { border-color:var(--color-border-strong); }
+@media(max-width:1120px) {
+ .site-header--landing { flex-wrap:wrap; gap:.65rem 1rem; padding-block:.75rem; }
+ .site-header--landing .landing-nav-capsule { margin-left:auto; }
+}
+@media(max-width:830px) {
+ .site-header--landing .landing-nav-capsule { width:100%; }
+ .site-header--landing .landing-nav-content { width:100%; justify-content:space-between; }
+}
 @media(max-width:767px) {
- .site-header { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.5rem 1rem; padding-block:1rem .5rem; }
- .site-header nav { grid-column:1/-1; grid-row:2; width:100%; justify-content:space-between; gap:.75rem; }
- .site-header .header-end { grid-column:2; grid-row:1; }
+ .site-header:not(.site-header--landing) { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.5rem 1rem; padding-block:1rem .5rem; }
+ .site-header:not(.site-header--landing) nav { grid-column:1/-1; grid-row:2; width:100%; justify-content:space-between; gap:.75rem; }
+ .site-header:not(.site-header--landing) .header-end { grid-column:2; grid-row:1; }
  .site-header .brand { font-size:1.5rem; gap:.5rem; }
- .site-header--landing { top:0; }
- .site-header--landing .header-end--landing { padding:.2rem .3rem; }
- .header-end--landing .header-end-content { gap:.45rem; }
- .header-end--landing .header-explore { display:none; }
+ .site-header--landing .landing-nav-content { gap:.3rem; }
+ .site-header--landing .landing-nav-content nav { flex:1 1 auto; }
+ .landing-nav-capsule .theme-toggle span { display:none; }
+ .landing-nav-capsule .theme-toggle { width:44px; padding:.5rem; }
+}
+@media(max-width:620px) {
+ .site-header--landing .landing-nav-capsule { border-radius:28px; }
+ .site-header--landing .landing-nav-content { flex-wrap:wrap; padding:.35rem .45rem; }
+ .site-header--landing .landing-nav-content nav { width:100%; justify-content:space-between; }
+ .site-header--landing .landing-nav-content .header-end { width:100%; }
+ .landing-nav-capsule .header-end-content { width:100%; justify-content:space-between; }
 }
 @media (max-width: 380px) {
  .site-header--landing .brand { font-size:1.25rem; }
  .site-header--landing .brand > svg { width:1.35rem; }
- .site-header--landing .header-end--landing { padding:.12rem .2rem; }
+ .site-header--landing .landing-nav-content nav a { font-size:.7rem; padding-inline:.35rem; }
 }
 @media (prefers-reduced-motion: reduce) {
- .site-header--landing, .header-end--landing .landing-liquid-surface { -webkit-backdrop-filter:none; backdrop-filter:none; }
+ .site-header--landing, .landing-nav-capsule .landing-liquid-surface { -webkit-backdrop-filter:none; backdrop-filter:none; }
+ .site-header--landing .landing-nav-content nav a,.site-header--landing .landing-nav-capsule .header-explore { transition:none; }
 }
