@@ -25,8 +25,8 @@ function SourceStudy() {
   </svg>
 }
 
-function Scene({ theme, topology = 0, mode = 'solid', view = 'iso', reset = 0 }) {
-  return <Suspense fallback={<div className="scene-fallback" role="status">Preparing the form study…</div>}><StudyScene {...{ theme, topology, mode, view, reset }} /></Suspense>
+function Scene({ theme, topology = 0, mode = 'solid', view = 'iso', reset = 0, hero = false }) {
+  return <Suspense fallback={<div className="scene-fallback" role="status">Preparing the form study…</div>}><StudyScene {...{ theme, topology, mode, view, reset, hero }} /></Suspense>
 }
 
 function Workspace({ theme }) {
@@ -63,11 +63,12 @@ export function Landing() {
   const { theme } = useTheme()
   const [topology, setTopology] = useState(0)
   const [heroView, setHeroView] = useState('iso')
+  const topologyPhase = topology >= 75 ? 'Vertices' : topology >= 35 ? 'Wireframe' : 'Solid surface'
   return <div className="approved-landing">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_APPLICATION_JSON_LD) }} />
       <section className="p-hero" aria-labelledby="prototype-title">
         <div className="p-hero-copy"><h1 id="prototype-title">A new dimension<br />in <em>perspective.</em></h1><p>A single image is a starting point.<br />Explore its structure. Inspect its geometry.<br />See what takes shape.</p><div className="p-hero-actions"><a className="p-button" href="#workspace">Explore the studio <Icon /></a><Link className="p-quiet-link" to="/reconstruct">Try real reconstruction</Link></div><div className="p-theme-caption"><span className="p-theme-swatch" /><div><strong>{theme === 'forest' ? 'Dark Forest Studio' : 'Light Ivory Atelier'}</strong><span>Two perspectives. One workspace.</span></div></div></div>
-        <div className="p-hero-stage"><div className="p-stage-heading"><span>Form study — Ribbed vessel</span><span className="p-mono">01 / 03D</span></div><div className="p-hero-canvas"><Scene theme={theme} topology={topology} view={heroView} /></div><div className="p-source-float"><div><SourceStudy /></div><span>Source study<small>Illustrative image</small></span><Icon /></div><div className="p-stage-controls"><div className="p-reveal-label"><label htmlFor="topology">Reveal the topology</label><output htmlFor="topology" className="p-mono">{topology}%</output></div><input id="topology" type="range" min="0" max="100" value={topology} onChange={e=>setTopology(Number(e.target.value))} /><div className="p-stage-foot"><span>Surface <span aria-hidden="true">→</span> Structure</span><button onClick={()=>setHeroView(v=>v==='iso'?'front':'iso')}><Icon name="orbit" /> {heroView === 'iso' ? 'Front view' : 'Isometric view'}</button></div></div></div>
+        <div className="p-hero-stage" data-topology-phase={topologyPhase.toLowerCase().replace(' surface', '')}><div className="p-stage-heading"><span>Form study — Ribbed vessel</span><span className="p-mono">01 / 03D</span></div><div className="p-hero-canvas"><Scene theme={theme} topology={topology} view={heroView} hero /></div><div className="p-source-float"><div><span className="p-source-index">IMAGE / 01</span><SourceStudy /></div><span>Source study<small>Illustrative image</small></span><Icon /></div><div className="p-stage-controls"><div className="p-reveal-label"><label htmlFor="topology">Reveal the topology</label><output htmlFor="topology" className="p-mono" data-phase={topologyPhase}>{topology}%</output></div><input id="topology" type="range" min="0" max="100" value={topology} aria-valuetext={`${topology}% · ${topologyPhase}`} style={{ '--reveal-progress': `${topology}%` }} onChange={e=>setTopology(Number(e.target.value))} /><div className="p-stage-foot"><span>Surface <span aria-hidden="true">→</span> Structure</span><button onClick={()=>setHeroView(v=>v==='iso'?'front':'iso')}><Icon name="orbit" /> {heroView === 'iso' ? 'Front view' : 'Isometric view'}</button></div></div></div>
         <div className="p-hero-bottom"><span>IMAGE <span aria-hidden="true">/</span> GEOMETRY <span aria-hidden="true">/</span> FORM</span><p>Illustrative geometry, not a model prediction.</p><a href="#workspace" aria-label="Scroll to workspace preview">Scroll to explore <span aria-hidden="true">↓</span></a></div>
       </section>
       <section id="process" className="p-process" aria-label="The reconstruction workflow"><div><span className="p-mono">01</span><h2>Begin with an image.</h2><p>Choose a source. Verify it before inference.</p></div><div><span className="p-mono">02</span><h2>Look beneath the surface.</h2><p>Inspect the model’s real vertices and faces.</p></div><div><span className="p-mono">03</span><h2>Keep the geometry.</h2><p>Reopen saved work. Export raw OBJ or GLB.</p></div></section>
