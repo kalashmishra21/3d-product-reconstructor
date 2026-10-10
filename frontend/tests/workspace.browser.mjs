@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const origin = 'http://127.0.0.1:5173'
-const debug = 'http://127.0.0.1:9224'
+const debug = `http://127.0.0.1:${process.env.CDP_PORT || 9224}`
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const target = await (await fetch(`${debug}/json/new?about:blank`, { method: 'PUT' })).json()
 const socket = new WebSocket(target.webSocketDebuggerUrl)

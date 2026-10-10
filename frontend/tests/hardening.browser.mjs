@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 
 const origin = 'http://127.0.0.1:5173'
-const debug = 'http://127.0.0.1:9224'
+const debug = `http://127.0.0.1:${process.env.CDP_PORT || 9224}`
 const rowId = '22222222-2222-4222-8222-222222222222'
 const ownerId = '11111111-1111-4111-8111-111111111111'
 const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg=='

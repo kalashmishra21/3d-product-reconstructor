@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const origin = 'http://127.0.0.1:5173'
-const debug = 'http://127.0.0.1:9224'
+const debug = `http://127.0.0.1:${process.env.CDP_PORT || 9224}`
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const target = await (await fetch(`${debug}/json/new?about:blank`, { method: 'PUT' })).json()
 const socket = new WebSocket(target.webSocketDebuggerUrl)
@@ -16,6 +16,10 @@ const pending = new Map()
 let authenticated = true
 let healthStatus = 'connected'
 const runtimeErrors = []
+const executionContexts = new Map()
+const consoleErrors = []
+const networkFailures = []
+const requestPaths = new Map()
 const reactKeyWarnings = []
 const interceptionErrors = []
 const send = (method, params = {}) => new Promise((resolve, reject) => {
@@ -51,12 +55,40 @@ const mockAuth = () => `
 `
 socket.addEventListener('message', (event) => {
   const data = JSON.parse(event.data)
+  if (data.method === 'Runtime.executionContextCreated') {
+    const context = data.params.context
+    executionContexts.set(context.id, { name: context.name, origin: context.origin, isDefault: context.auxData?.isDefault ?? null, type: context.auxData?.type ?? null })
+  }
   if (data.id && pending.has(data.id)) {
     const task = pending.get(data.id)
     clearTimeout(task.timeout); pending.delete(data.id)
     data.error ? task.reject(new Error(data.error.message)) : task.resolve(data.result)
   }
-  if (data.method === 'Runtime.exceptionThrown') runtimeErrors.push(data.params.exceptionDetails.text)
+  if (data.method === 'Runtime.exceptionThrown') {
+    const details = data.params.exceptionDetails
+    runtimeErrors.push({
+      text: details.text,
+      description: details.exception?.description ?? '',
+      url: details.url ?? '',
+      line: details.lineNumber,
+      column: details.columnNumber,
+      context: executionContexts.get(details.executionContextId) ?? null,
+      frames: details.stackTrace?.callFrames?.map(({ functionName, url, lineNumber, columnNumber }) => ({ functionName, url, lineNumber, columnNumber })) ?? [],
+    })
+  }
+  if (data.method === 'Runtime.consoleAPICalled' && data.params.type === 'error') {
+    consoleErrors.push(data.params.args.map(({ value, description }) => value ?? description ?? '').join(' '))
+  }
+  if (data.method === 'Network.requestWillBeSent') {
+    const url = new URL(data.params.request.url)
+    if (url.origin === origin) requestPaths.set(data.params.requestId, `${data.params.request.method} ${url.pathname}`)
+  }
+  if (data.method === 'Network.responseReceived' && data.params.response.status >= 400) {
+    networkFailures.push(`${requestPaths.get(data.params.requestId) ?? 'unknown request'}: HTTP ${data.params.response.status}`)
+  }
+  if (data.method === 'Network.loadingFailed' && !data.params.canceled) {
+    networkFailures.push(`${requestPaths.get(data.params.requestId) ?? 'unknown request'}: ${data.params.errorText}`)
+  }
   if (data.method === 'Runtime.consoleAPICalled') {
     const message = (data.params.args || []).map((arg) => String(arg.value ?? arg.description ?? '')).join(' ')
     if (/Encountered two children with the same key|Each child in a list should have a unique key prop/i.test(message)) {
@@ -88,7 +120,7 @@ const visit = async (path, selector) => {
 const failures = []
 const check = (value, message) => { if (!value) failures.push(message) }
 try {
-  await send('Page.enable'); await send('Runtime.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
+  await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable'); await send('Emulation.setFocusEmulationEnabled', { enabled: true })
   await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/src/lib/auth.js*` }] })
   await viewport(1440)
   await visit('/dashboard', '.dash-layout')
@@ -125,7 +157,7 @@ try {
   await send('Page.navigate', { url: origin + '/public-missing-page' })
   await until(`!!document.querySelector('[data-page=not-found]')`)
   check(await evaluate(`!!document.querySelector('.site-header') && !document.querySelector('.dash-sidebar')`), 'Signed-out 404 retains public navigation')
-  check(runtimeErrors.length === 0, 'No application exceptions')
+  check(runtimeErrors.length === 0, `No application exceptions: ${JSON.stringify({ runtimeErrors, consoleErrors, networkFailures }, null, 2)}`)
   check(reactKeyWarnings.length === 0, 'No duplicate React keys')
   assert.deepEqual(failures, [], 'Stage 11C regression checks')
   console.log('PASS Stage 11C hierarchy, authenticated 404, responsive controls, profile focus and reduced motion')
