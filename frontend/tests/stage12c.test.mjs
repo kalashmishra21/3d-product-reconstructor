@@ -3,9 +3,9 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 
-test('the isolated landing lens uses the verified liquid-gl release', async () => {
+test('the public landing ships without the disabled GPU-glass dependency', async () => {
   const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'))
-  assert.equal(packageJson.dependencies['liquid-gl'], '3.0.0')
+  assert.equal(packageJson.dependencies['liquid-gl'], undefined)
 })
 
 async function loadStageModule(path, description) {
@@ -17,30 +17,13 @@ async function loadStageModule(path, description) {
   }
 }
 
-test('Landing liquid glass is theme-aware, auto-fallback capable, and safely disposable', async () => {
-  const glass = await loadStageModule('../src/landing/landingGlass.js', 'Landing liquid-glass lifecycle')
-  assert.equal(glass.LANDING_GPU_GLASS_ENABLED, false, 'GPU refraction stays disabled on the public landing until its measured startup cost is acceptable')
-  assert.equal(glass.shouldEnableLandingGlass({ isLanding: true, reducedMotion: false }), false)
-  assert.equal(glass.shouldEnableLandingGlass({ isLanding: true, reducedMotion: true }), false)
-  assert.equal(glass.shouldEnableLandingGlass({ isLanding: true, reducedMotion: false, smallScreen: true }), false)
-  assert.equal(glass.shouldEnableLandingGlass({ isLanding: false, reducedMotion: false }), false)
-
-  const forest = glass.buildLandingGlassOptions('forest')
-  const ivory = glass.buildLandingGlassOptions('ivory')
-  assert.equal(forest.engine, 'auto') // liquidGL: WebGPU -> WebGL -> CSS fallback
-  assert.equal(forest.target, '[data-landing-liquid-surface]')
-  assert.equal(forest.snapshot, 'body')
-  assert.equal(forest.content, false)
-  assert.ok(forest.resolution <= 1, 'the full-page capture stays at a conservative resolution')
-  assert.ok(forest.refraction >= 0.06, 'refraction must remain visibly legible')
-  assert.notEqual(forest.tint, ivory.tint)
-  assert.equal(typeof forest.on.init, 'function')
-
-  let destroyed = 0
-  glass.destroyLandingGlass([{ destroy() { destroyed += 1 } }, { destroy() { destroyed += 1 } }])
-  glass.destroyLandingGlass({ destroy() { destroyed += 1 } })
-  glass.destroyLandingGlass(null)
-  assert.equal(destroyed, 3)
+test('landing CSS glass keeps theme, viewport, and motion states', async () => {
+  const glass = await loadStageModule('../src/landing/landingGlass.js', 'Landing CSS glass')
+  assert.equal(glass.landingGlassState({ active: false, reducedMotion: false, smallScreen: false }), 'inactive')
+  assert.equal(glass.landingGlassState({ active: true, reducedMotion: true, smallScreen: false }), 'reduced-motion')
+  assert.equal(glass.landingGlassState({ active: true, reducedMotion: false, smallScreen: true }), 'mobile-css')
+  assert.equal(glass.landingGlassState({ active: true, reducedMotion: false, smallScreen: false }), 'performance-fallback')
+  assert.notEqual(glass.landingGlassTint('forest'), glass.landingGlassTint('ivory'))
 })
 
 test('public metadata is truthful, valid SoftwareApplication JSON-LD, and omits unknown canonical URLs', async () => {
