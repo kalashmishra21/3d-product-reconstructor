@@ -325,7 +325,7 @@ try {
   await until("document.querySelector('.recon-view-panel h2')?.textContent === 'Real Stage-3 mesh'")
   await until("!!document.querySelector('.result-stage-canvas canvas')")
   await delay(500)
-  assert.equal(await evaluate("(async()=>{const f=await import('/node_modules/.vite/deps/@react-three_fiber.js');return Array.from(f._roots).some(([c,r])=>c.closest('.result-stage-canvas') && r.store.getState().gl.info.render.frame > 1)})()"), true, 'Demand renderer draws settled geometry after Input comparison')
+  assert.equal(await evaluate("(async()=>{const url=performance.getEntriesByType('resource').find(({name})=>name.includes('/node_modules/.vite/deps/@react-three_fiber.js?v='))?.name;if(!url)return false;const f=await import(url);return Array.from(f._roots).some(([c,r])=>c.closest('.result-stage-canvas') && r.store.getState().gl.info.render.frame > 1)})()"), true, 'Demand renderer draws settled geometry after Input comparison')
   await evaluate("document.querySelector('.result-fit').click()")
   assert.equal(await evaluate("document.querySelector('.result-mode-group button:first-child').classList.contains('is-active')"), true)
   const nearLine = healthyStage3()
