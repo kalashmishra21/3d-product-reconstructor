@@ -1,6 +1,6 @@
 ﻿import assert from 'node:assert/strict'
 const base = 'http://127.0.0.1:5173'
-const debug = `http://127.0.0.1:${process.env.CDP_PORT || 9230}`
+const debug = `http://127.0.0.1:${process.env.CDP_PORT || 9224}`
 const target = await (await fetch(`${debug}/json/new?about:blank`, {method:'PUT'})).json()
 const ws = new WebSocket(target.webSocketDebuggerUrl)
 await new Promise(r=>ws.addEventListener('open',r,{once:true}))

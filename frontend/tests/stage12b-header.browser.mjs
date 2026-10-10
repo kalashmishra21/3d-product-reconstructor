@@ -1,5 +1,5 @@
 ﻿import assert from 'node:assert/strict'
-const debug='http://127.0.0.1:9230'
+const debug=`http://127.0.0.1:${process.env.CDP_PORT || 9224}`
 const target=await(await fetch(debug+'/json/new?http://127.0.0.1:5173/history',{method:'PUT'})).json()
 const ws=new WebSocket(target.webSocketDebuggerUrl);await new Promise(r=>ws.addEventListener('open',r,{once:true}))
 let id=0;const pending=new Map();ws.addEventListener('message',({data})=>{const m=JSON.parse(data);if(m.id){pending.get(m.id)?.(m.result);pending.delete(m.id)}})

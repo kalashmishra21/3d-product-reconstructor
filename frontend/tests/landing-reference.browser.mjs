@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const origin = 'http://127.0.0.1:5173'
-const debug = `http://127.0.0.1:${process.env.CDP_PORT || 9230}`
+const debug = `http://127.0.0.1:${process.env.CDP_PORT || 9224}`
 const target = await (await fetch(`${debug}/json/new?about:blank`, { method: 'PUT' })).json()
 const socket = new WebSocket(target.webSocketDebuggerUrl)
 await new Promise(resolve => socket.addEventListener('open', resolve, { once: true }))
-let next = 0
+let next = 0, loadSequence = 0
 const pending = new Map(), errors = [], inference = []
 socket.addEventListener('message', ({ data }) => {
   const event = JSON.parse(data)
@@ -17,17 +17,26 @@ socket.addEventListener('message', ({ data }) => {
   if (event.method === 'Runtime.exceptionThrown') errors.push(event.params.exceptionDetails.text)
   if (event.method === 'Runtime.consoleAPICalled' && event.params.type === 'error') errors.push(event.params.args.map(a=>a.value||a.description).join(' '))
   if (event.method === 'Network.requestWillBeSent' && /\/api\/v1\/reconstructions\/infer(?:\?|$)/.test(event.params.request.url)) inference.push(true)
+  if (event.method === 'Page.loadEventFired') loadSequence++
 })
 const send = (method, params = {}) => new Promise((resolve, reject) => { const id=++next; pending.set(id,{resolve,reject}); socket.send(JSON.stringify({id,method,params})) })
 const evaluate = async expression => { const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true}); if(r.exceptionDetails)throw new Error(r.exceptionDetails.text); return r.result.value }
 const delay = ms => new Promise(resolve=>setTimeout(resolve,ms))
 const until = async expression => {for(let i=0;i<100;i++){if(await evaluate(expression))return;await delay(150)}throw new Error(`Timed out: ${expression}`)}
+async function waitForNextLoad(previousSequence) {
+  const deadline = Date.now() + 10000
+  while (loadSequence <= previousSequence && Date.now() < deadline) await delay(25)
+  assert.ok(loadSequence > previousSequence, 'CDP page load event arrives before post-navigation inspection')
+  await until(`document.readyState === 'complete'`)
+}
 const click = async label => { assert.ok(await evaluate(`(() => {const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)});b?.click();return !!b})()`),label) }
 await mkdir('.review/landing-reference', { recursive: true })
 async function screenshot(name) { const r=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(`.review/landing-reference/${name}.png`,Buffer.from(r.data,'base64')) }
 try {
   await send('Page.enable');await send('Runtime.enable');await send('Network.enable')
+  const initialLoad = loadSequence
   await send('Page.navigate',{url:`${origin}/`})
+  await waitForNextLoad(initialLoad)
   await until(`!!document.querySelector('h1')`)
   assert.equal(await evaluate(`!!document.querySelector('.p-workspace')`),true,'Real landing includes approved Vessel study workstation')
   assert.equal(await evaluate(`document.querySelector('.site-footer a[href="https://github.com/kalashmishra21"]')?.textContent`),'Project by Kalash Mishra')
@@ -57,7 +66,9 @@ try {
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]})
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('.p-button')).transitionDuration`),'0s')
   await send('Emulation.setEmulatedMedia',{features:[]})
+  const reloadSequence = loadSequence
   await send('Page.reload')
+  await waitForNextLoad(reloadSequence)
   await until(`document.documentElement.dataset.theme === 'ivory'`)
   assert.equal(inference.length,0)
   assert.deepEqual(errors,[])
