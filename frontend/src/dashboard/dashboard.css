@@ -129,7 +129,6 @@
   .dash-header { @apply min-h-22 items-center border-b border-border/50 py-5 mb-7; }
   .dash-header h1 { @apply text-[clamp(25px,2.4vw,34px)]; }
   .dash-header-copy > p:last-child { @apply text-[13px]; }
-  .dash-header .backend-status, .dash-sidebar .backend-status { @apply text-[11px]; }
   .dash-profile-popover { @apply border-border bg-surface-elevated shadow-panel; }
   .dash-command { @apply rounded-panel border-border/70 bg-surface shadow-panel md:grid-cols-[1.2fr_1fr]; }
   .dash-command-copy { @apply p-6 sm:p-8 xl:p-10; }
