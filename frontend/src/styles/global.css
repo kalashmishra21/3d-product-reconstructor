@@ -75,49 +75,6 @@
   .secondary { @apply border-[var(--color-border-strong)] text-ivory hover:border-olive hover:bg-[var(--color-surface)]; }
   .hero-footnote { @apply mt-7 flex items-start gap-4 text-[11px] leading-[1.8] text-muted lg:mt-13; }
   .footnote-line { @apply mt-2 h-px w-6 shrink-0 bg-[var(--color-surface-hover)]; }
-  .backend-status { @apply inline-flex items-center gap-2 font-mono text-[10px] whitespace-nowrap text-muted; }
-  .status-dot { @apply size-1.5 shrink-0 rounded-full bg-muted; }
-  .is-connected .status-dot { @apply bg-olive; }
-  .is-unavailable .status-dot { @apply bg-warning; }
-  .is-unavailable { @apply text-warning; }
-  .geometry-demo { @apply relative min-w-0 rounded-sm border border-[var(--color-border-strong)] bg-scene pt-px; }
-  .viewer-topline { @apply pointer-events-none absolute top-5 right-5 left-5 z-1 flex justify-between gap-4 font-mono text-[9px] tracking-widest text-scene-ink; }
-  .viewer-topline > span:first-child { @apply flex items-center gap-3; }
-  .tiny-cross { @apply text-[15px] leading-[10px] text-olive; }
-  .viewer-live { @apply text-[var(--color-text-secondary)]; }
-  .viewport { @apply relative h-[400px] overflow-hidden sm:h-[460px] lg:h-[clamp(360px,34vw,490px)]; }
-  .viewport canvas { @apply block; }
-  .viewport-ruler { @apply pointer-events-none absolute top-18 bottom-18 left-5 z-1 flex flex-col justify-between font-mono text-[8px] text-scene-ink opacity-65; }
-  .viewport-ruler span { @apply flex items-center gap-1.5; }
-  .viewport-ruler span::before { @apply h-px w-1.5 bg-current content-['']; }
-  .viewport-caption { @apply pointer-events-none absolute right-5 bottom-5 left-5 flex justify-between gap-4 font-mono text-[9px] tracking-wider text-scene-ink; }
-  .viewport-caption span:last-child { @apply font-sans text-[10px] tracking-normal; }
-  .axis-mark { @apply pointer-events-none absolute right-8 bottom-14 h-8 w-8 border-b border-l border-[var(--color-border-strong)] font-mono text-[8px] text-[var(--color-text-secondary)]; }
-  .axis-mark::before { @apply absolute bottom-0 left-0 h-6 w-px origin-bottom rotate-40 bg-[var(--color-surface-hover)] content-['']; }
-  .axis-mark span { @apply absolute; }
-  .axis-mark span:nth-child(1) { @apply -top-3 -left-1; }
-  .axis-mark span:nth-child(2) { @apply -right-3 -bottom-1; }
-  .axis-mark span:nth-child(3) { @apply -top-1 left-4; }
-  .viewer-controls { @apply flex flex-wrap items-center gap-2 border-t border-[var(--color-border-strong)] bg-[var(--color-deep)] p-3; }
-  .stage-selector { @apply flex min-w-0 flex-1 basis-full gap-1 sm:basis-auto; }
-  .stage-selector button { @apply flex min-h-12 flex-1 flex-col items-start gap-1.5 rounded-xs border border-transparent bg-transparent px-2 py-2 text-[11px] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface)] hover:text-ivory; }
-  .stage-selector button.selected { @apply bg-olive text-[var(--color-on-accent)]; }
-  .stage-number { @apply font-mono text-[8px] opacity-75; }
-  .rotation-controls { @apply ml-auto flex gap-px pl-1 sm:border-l sm:border-[var(--color-border-strong)] sm:pl-2; }
-  .rotation-controls button { @apply grid size-11 place-items-center border-0 bg-transparent enabled:hover:bg-[var(--color-surface)] enabled:hover:text-olive; }
-  .rotation-controls svg { @apply size-4.5; }
-  .stage-explanation { @apply min-h-26 bg-[var(--color-deep)] px-5 pt-3 pb-5; }
-  .stage-explanation strong { @apply text-[13px] font-medium; }
-  .stage-explanation p { @apply mt-2 max-w-100 text-[11px] leading-[1.7] text-[var(--color-text-secondary)]; }
-  .demo-disclaimer { @apply absolute top-[calc(100%+12px)] right-0 text-right text-[9px] leading-relaxed text-muted; }
-  .demo-disclaimer span { @apply mr-1 text-olive; }
-  .static-scene { @apply flex size-full flex-col items-center justify-center p-12 text-olive; }
-  .static-scene svg { @apply h-3/4 w-4/5 max-w-58; }
-  .static-scene p { @apply max-w-68 text-center text-[11px] leading-relaxed text-scene-ink; }
-  .image-stage { @apply grid h-full place-items-center px-10 pt-16 pb-12; }
-  .image-paper { @apply flex aspect-4/5 h-full max-h-82 flex-col items-center border-8 border-[var(--color-border-strong)] bg-[var(--color-accent)] p-3 text-[var(--color-text-secondary)]; }
-  .image-paper svg { @apply h-[calc(100%-20px)] max-w-full; }
-  .image-paper span { @apply mt-auto pt-2 font-mono text-[7px]; }
   .pipeline-section { @apply border-t border-rule pt-12 pb-16 lg:pt-14 lg:pb-18; }
   .section-heading { @apply grid grid-cols-1 items-baseline gap-4 md:grid-cols-2; }
   .section-heading .eyebrow { @apply col-span-full; }
@@ -170,9 +127,6 @@
   .coming-actions { @apply flex flex-wrap items-center justify-center gap-3; }
 }
 
-/* Canvas-only lighting and reference-image depth. */
-.viewport { background: radial-gradient(ellipse at 48% 45%, var(--color-surface-hover) 0%, var(--color-surface) 44%, var(--color-surface) 74%); }
-.image-paper { box-shadow: 8px 10px 0 var(--shadow-color); }
 /* Shared product typography and bounded surface levels. */
 :root {
   --surface-glass: rgba(37, 49, 36, .82);

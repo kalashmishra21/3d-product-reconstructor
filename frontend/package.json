@@ -17,7 +17,6 @@
     "@react-three/fiber": "9.8.1",
     "@supabase/supabase-js": "2.117.2",
     "axios": "1.20.0",
-    "liquid-gl": "3.0.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-router-dom": "7.18.4",

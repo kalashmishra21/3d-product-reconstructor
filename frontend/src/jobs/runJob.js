@@ -1,7 +1,20 @@
 const SAFE_FAILURE = 'Reconstruction could not complete. Please try again.'
+const SOURCE_PATCH_TIMEOUT_MS = 30_000
+const FAILURE_PATCH_TIMEOUT_MS = 10_000
+
+function withinDeadline(promise, milliseconds, message) {
+  let timer
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), milliseconds) }),
+  ]).finally(() => clearTimeout(timer))
+}
 
 /** One browser-owned run: create row, preserve source, infer once, then persist the same raw mesh. */
-export async function runReconstruction(snapshot, services, { signal, onEvent = () => {} } = {}) {
+export async function runReconstruction(snapshot, services, {
+  signal, onEvent = () => {}, sourcePatchTimeoutMs = SOURCE_PATCH_TIMEOUT_MS,
+  failurePatchTimeoutMs = FAILURE_PATCH_TIMEOUT_MS,
+} = {}) {
   const { userId, file, objectName, verified } = snapshot
   if (!userId || !file || !verified || verified.user_id && verified.user_id !== userId) throw new Error('Verified input is required')
   let row
@@ -16,9 +29,14 @@ export async function runReconstruction(snapshot, services, { signal, onEvent = 
   }
   onEvent({ type: 'processing', id: row.id })
   let mesh
+  let sourceConfirmed = false
   try {
     const sourcePath = await services.uploadSource(userId, row.id, file)
-    await services.patchReconstruction(row.id, { source_path: sourcePath }, { expectedStatus: 'processing' })
+    await withinDeadline(
+      services.patchReconstruction(row.id, { source_path: sourcePath }, { expectedStatus: 'processing' }),
+      sourcePatchTimeoutMs, 'Source confirmation timed out',
+    )
+    sourceConfirmed = true
     if (signal?.aborted) throw new Error('Reconstruction interrupted')
     const predicted = await services.inferImage(file, { signal })
     if (services.validateMesh(predicted)) throw new Error('The model returned invalid mesh data')
@@ -38,8 +56,12 @@ export async function runReconstruction(snapshot, services, { signal, onEvent = 
       error.id = row.id
       onEvent({ type: 'failed', kind: 'persistence', message: 'Mesh generated, but saving is incomplete. Retry save.', mesh })
     } else {
-      await services.patchReconstruction(row.id, { status: 'failed', error_message: SAFE_FAILURE }, { expectedStatus: 'processing' }).catch(() => {})
-      onEvent({ type: 'failed', kind: 'inference', message: SAFE_FAILURE })
+      await withinDeadline(
+        services.patchReconstruction(row.id, { status: 'failed', error_message: SAFE_FAILURE }, { expectedStatus: 'processing' }),
+        failurePatchTimeoutMs, 'Failure status update timed out',
+      ).catch(() => {})
+      onEvent({ type: 'failed', kind: sourceConfirmed ? 'inference' : 'database',
+        message: sourceConfirmed ? SAFE_FAILURE : 'Could not confirm the saved source image. Check the connection and try again.' })
     }
     throw error
   }

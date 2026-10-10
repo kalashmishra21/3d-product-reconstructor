@@ -142,7 +142,6 @@
 
 @media (max-width: 639px) {
   .recon-topbar { min-height: 68px; }
-  .recon-topbar .backend-status { display: none; }
   .recon-heading { padding-top: 38px; }
   .recon-workspace { display: flex; flex-direction: column; }
   .recon-control-panel { order: 1; }
