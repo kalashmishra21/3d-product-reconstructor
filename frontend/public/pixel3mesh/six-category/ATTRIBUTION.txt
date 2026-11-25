@@ -1,0 +1,26 @@
+Pixel3Mesh gallery source attribution
+
+The input images were rendered from the objects below. The PLY point clouds
+and OBJ visible-surface meshes are derived predictions of Pixel3Mesh; they are
+not the source geometry. Object names and source licenses were checked on
+2026-11-25. The rendered images and model outputs are modified derivatives.
+
+Handbags: ATOM Shopping Handbag, by ATOM, CC Attribution (CC BY 4.0).
+https://sketchfab.com/3d-models/atom-shopping-handbag-4bedaea868b84e33a8b6b7ddecfbb51d
+
+Speakers: Speaker, by Joe Roechow, CC Attribution (CC BY 4.0).
+https://sketchfab.com/3d-models/speaker-a9af14bb4c314a2fbc857796c71f8d83
+
+Mugs: ACE_Coffee_Mug_Kristen_16_oz_cup, by Google LLC, CC BY 4.0.
+https://research.google/blog/scanned-objects-by-google-research-a-dataset-of-3d-scanned-common-household-items/
+
+Backpacks: Jansport_School_Backpack_Blue_Streak, by Google LLC, CC BY 4.0.
+https://research.google/blog/scanned-objects-by-google-research-a-dataset-of-3d-scanned-common-household-items/
+
+Tables: Amazon Berkeley Objects B07MJL3LW8, CC BY 4.0.
+https://amazon-berkeley-objects.s3.amazonaws.com/index.html
+
+Chairs: Amazon Berkeley Objects B07VSTTTHV, CC BY 4.0.
+https://amazon-berkeley-objects.s3.amazonaws.com/index.html
+
+License text: https://creativecommons.org/licenses/by/4.0/

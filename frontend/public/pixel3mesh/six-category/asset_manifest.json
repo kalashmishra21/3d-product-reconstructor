@@ -1,0 +1,104 @@
+{
+  "checkpoint_sha256": "ea861cc8f2120d80a8509b2581949445ca8aa73e1d274ba2882ed37e770f3500",
+  "categories": [
+    "Handbags",
+    "Speakers",
+    "Mugs",
+    "Tables",
+    "Backpacks",
+    "Chairs"
+  ],
+  "files": [
+    {
+      "path": "Handbags/point_cloud.ply",
+      "bytes": 72681,
+      "sha256": "e46cb601b1e03efbddbb156623ffdad7e015d369a2022d256a7a833740a69b15"
+    },
+    {
+      "path": "Handbags/input.png",
+      "bytes": 23481,
+      "sha256": "cd9b743b1ee47377b9728b7e796cf3e1d629591bc5617d6888c8ce95a8bfd939"
+    },
+    {
+      "path": "Handbags/visible_surface.obj",
+      "bytes": 455310,
+      "sha256": "e76fe261bcac49bd5fa091646b174dca439fe50d4f5af135bce78df1ae7e442d"
+    },
+    {
+      "path": "Speakers/point_cloud.ply",
+      "bytes": 72168,
+      "sha256": "a783d46c797cfd432adbea214bacfc8a45df09ff8e1676ccedd598b4afff67d8"
+    },
+    {
+      "path": "Speakers/input.png",
+      "bytes": 33980,
+      "sha256": "cc5cce0856963fc6b15820afe7c49eccc5f50b7c9f216223e42ac880ed97ba3b"
+    },
+    {
+      "path": "Speakers/visible_surface.obj",
+      "bytes": 509854,
+      "sha256": "e22e58c0a2ca332187ca03a9c2ba20318ee6aa741f858e844213324316415c36"
+    },
+    {
+      "path": "Mugs/point_cloud.ply",
+      "bytes": 72733,
+      "sha256": "a4014f7a8c180b162ef94eb714b8224ad56fba502b2a4e96e1670ec9d418523b"
+    },
+    {
+      "path": "Mugs/input.png",
+      "bytes": 36862,
+      "sha256": "6aa2d9a7c8e2eb1b7cb405153cdcbb18b2e9c94dabc0795748d8dd8eae95e56b"
+    },
+    {
+      "path": "Mugs/visible_surface.obj",
+      "bytes": 444447,
+      "sha256": "9e705ee431bc8416ec01e77f78d6b6ecb9d2de07857aecc9a18e2f54619e6a6f"
+    },
+    {
+      "path": "Tables/point_cloud.ply",
+      "bytes": 72387,
+      "sha256": "4b0c4e9f8492b289957cb28390c82343402f4da4c1b432b5a36b39bc8cbf1f3f"
+    },
+    {
+      "path": "Tables/input.png",
+      "bytes": 11391,
+      "sha256": "885bb317fc71a93a97759442cb9cc58cc0490a7af514ad8737cb3a8c3725f984"
+    },
+    {
+      "path": "Tables/visible_surface.obj",
+      "bytes": 291701,
+      "sha256": "55af5030069ea887ad2883a013caacc7d64adb50e10b44c9648e7f1d01e53f00"
+    },
+    {
+      "path": "Backpacks/point_cloud.ply",
+      "bytes": 71753,
+      "sha256": "9ada455e541194eea184a72c948f2c1cfba0208ef9a1f4ef8edfa3d8258cf28a"
+    },
+    {
+      "path": "Backpacks/input.png",
+      "bytes": 29738,
+      "sha256": "a7e5fa04e1440c2e8c82ecc0b262d5d7d250b744bf638c177ba7351b80d4836f"
+    },
+    {
+      "path": "Backpacks/visible_surface.obj",
+      "bytes": 443589,
+      "sha256": "4d8937cb7fa8d4344bcbdde5c99c3a355a920c9f52af99d02d40d9d881533022"
+    },
+    {
+      "path": "Chairs/point_cloud.ply",
+      "bytes": 72725,
+      "sha256": "551e399bc028271e984364b313ddc8e7274859eeb362d508dab6a9156f90ab3a"
+    },
+    {
+      "path": "Chairs/input.png",
+      "bytes": 25672,
+      "sha256": "811f65f94f7068c7e60d0ff165eea5f5217a083f7dca3b6ed4051635d6b37d7a"
+    },
+    {
+      "path": "Chairs/visible_surface.obj",
+      "bytes": 386646,
+      "sha256": "861e0f69848dae2bd052a1202ab1ae07d12293083779f9a3e4fc9b6a4a95efc6"
+    }
+  ],
+  "semantics": "selected checkpoint 2048-point outputs; depth meshes from frozen predicted depth branch; visible shell only"
+}

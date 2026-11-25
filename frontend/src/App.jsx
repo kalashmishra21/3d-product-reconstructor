@@ -5,6 +5,7 @@ import { Landing } from './pages/Landing'
 import { ComingNext } from './pages/ComingNext'
 import { useBackendHealth } from './lib/useBackendHealth'
 import { LandingLiquidGlass } from './landing/LandingLiquidGlass.jsx'
+import { SixCategoryGallery } from './components/SixCategoryGallery.jsx'
 
 const AuthArea = lazy(() => import('./auth/AuthArea'))
 const authModule = () => import('./auth/AuthArea')
@@ -49,6 +50,7 @@ export default function App() {
     <a className="skip-link" href="#main-content">Skip to content</a>
     <RouteEffects />
     <Routes>
+      <Route path="/model-gallery" element={<SixCategoryGallery />} />
       <Route path="/" element={<PublicArea />} />
       <Route element={<AuthRoute />}>
         <Route path="/login" element={<AuthFormRoute mode="login" />} />
