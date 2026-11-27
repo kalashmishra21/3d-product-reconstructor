@@ -60,3 +60,97 @@
   .reconstruction-file-control input { width: 100%; margin-left: 0; }
   .reconstruction-output-empty { padding: 1.25rem; }
 }
+
+/* Reconstruction workspace: restrained surfaces and theme-owned colors. */
+.triposr-workspace { align-items: start; }
+.triposr-input-panel,
+.triposr-result-panel { gap: 1rem; }
+.triposr-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.triposr-panel-heading h2 { margin: 0; color: var(--color-text-primary); font-size: clamp(1.2rem, 1.7vw, 1.55rem); letter-spacing: -.025em; }
+.triposr-panel-heading .calibrated-eyebrow { margin-bottom: .4rem; }
+.triposr-file-size,
+.triposr-result-ready { color: var(--color-text-secondary); font: 650 .67rem/1.4 var(--font-mono); letter-spacing: .07em; }
+.triposr-result-ready { padding: .35rem .55rem; border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-success); }
+.triposr-input-panel > .reconstruction-copy { margin: -.4rem 0 .1rem; }
+.triposr-dropzone { display: grid; min-height: 245px; place-content: center; justify-items: center; gap: .55rem; padding: 1.25rem; border: 1px dashed var(--color-border-strong); border-radius: 7px; background: var(--color-surface-elevated); color: var(--color-text-primary); text-align: center; cursor: pointer; transition: border-color .16s ease, background-color .16s ease, transform .16s ease; }
+.triposr-dropzone:hover,
+.triposr-dropzone.is-dragging { border-color: var(--color-accent); background: var(--color-surface-hover); }
+.triposr-dropzone.is-dragging { transform: scale(1.01); }
+.triposr-dropzone input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+.triposr-dropzone:focus-within { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.triposr-upload-mark { display: grid; width: 2.5rem; height: 2.5rem; place-items: center; margin-bottom: .35rem; border: 1px solid var(--color-border); border-radius: 50%; background: var(--color-surface); color: var(--color-accent); font-size: 1.35rem; }
+.triposr-dropzone strong { font-size: .96rem; }
+.triposr-dropzone > span:not(.triposr-upload-mark) { color: var(--color-text-secondary); font-size: .84rem; }
+.triposr-browse-link { color: var(--color-accent); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.triposr-dropzone small { margin-top: .6rem; color: var(--color-text-secondary); font-size: .7rem; letter-spacing: .04em; }
+.triposr-selected-file { overflow: hidden; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-background); }
+.triposr-preview-frame { display: grid; min-height: 220px; max-height: 315px; place-items: center; padding: .75rem; background: var(--color-surface-elevated); }
+.triposr-preview-frame .reconstruction-preview { width: auto; max-width: 100%; max-height: 285px; border: 0; border-radius: 3px; background: transparent; }
+.triposr-image-details { display: grid; gap: .2rem; padding: .7rem .85rem .45rem; }
+.triposr-image-details strong { overflow: hidden; color: var(--color-text-primary); font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+.triposr-image-details span { color: var(--color-text-secondary); font-size: .72rem; }
+.triposr-image-actions { display: flex; align-items: center; gap: .85rem; padding: .35rem .85rem .8rem; }
+.triposr-secondary-button,
+.triposr-viewer-actions button,
+.triposr-control-group button,
+.triposr-camera-presets button { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; padding: .48rem .75rem; border: 1px solid var(--color-border); border-radius: 5px; background: var(--color-surface); color: var(--color-text-primary); font: 620 .76rem var(--font-sans); cursor: pointer; transition: border-color .14s ease, background-color .14s ease, color .14s ease; }
+.triposr-secondary-button:hover,
+.triposr-viewer-actions button:hover,
+.triposr-control-group button:hover,
+.triposr-camera-presets button:hover { border-color: var(--color-border-strong); background: var(--color-surface-hover); }
+.triposr-secondary-button:disabled { opacity: .55; cursor: not-allowed; }
+.triposr-text-button { min-height: 38px; padding: .3rem; border: 0; background: transparent; color: var(--color-text-secondary); font: 600 .76rem var(--font-sans); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.triposr-text-button:hover { color: var(--color-danger); }
+.triposr-preflight-block { display: grid; gap: .65rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-background); }
+.triposr-step-label { display: flex; align-items: center; gap: .6rem; color: var(--color-text-primary); font-size: .82rem; }
+.triposr-step-label > span { display: grid; width: 1.45rem; height: 1.45rem; place-items: center; border: 1px solid var(--color-border); border-radius: 50%; color: var(--color-accent); font: 700 .64rem var(--font-mono); }
+.triposr-preflight-block > .reconstruction-copy { margin: 0; font-size: .79rem; }
+.triposr-preflight-button { justify-self: start; }
+.triposr-checklist { display: grid; gap: .15rem; padding-top: .35rem; border-top: 1px solid var(--color-border); }
+.triposr-check-row { display: grid; grid-template-columns: 1rem 1fr auto; align-items: center; gap: .5rem; min-height: 1.8rem; color: var(--color-text-secondary); font-size: .72rem; }
+.triposr-check-icon { display: grid; width: .92rem; height: .92rem; place-items: center; border-radius: 50%; background: var(--color-surface-elevated); color: var(--color-text-secondary); font-size: .65rem; font-weight: 800; }
+.triposr-check-icon.is-passed { background: color-mix(in srgb, var(--color-success) 14%, transparent); color: var(--color-success); }
+.triposr-check-icon.is-failed { background: var(--color-danger-soft); color: var(--color-danger); }
+.triposr-check-state { font-size: .66rem; font-weight: 650; }
+.triposr-reconstruct-label { margin-top: .1rem; }
+.triposr-input-panel .reconstruction-submit { width: 100%; min-height: 48px; }
+.triposr-input-panel .reconstruction-submit:enabled { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-on-accent); opacity: 1; cursor: pointer; }
+.triposr-input-panel .reconstruction-submit:enabled:hover { filter: brightness(.94); }
+.triposr-action-note { margin: -.55rem 0 0; color: var(--color-text-secondary); font-size: .7rem; text-align: center; }
+.triposr-result-panel { overflow: hidden; }
+.triposr-tabs { display: flex; width: max-content; gap: .25rem; padding: .22rem; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-background); }
+.triposr-tabs button { min-width: 75px; min-height: 34px; padding: .35rem .75rem; border: 0; border-radius: 4px; background: transparent; color: var(--color-text-secondary); font: 650 .74rem var(--font-sans); cursor: pointer; }
+.triposr-tabs button.is-active { background: var(--color-surface); color: var(--color-text-primary); box-shadow: 0 1px 3px rgb(30 35 28 / 11%); }
+.triposr-tabs button:disabled { opacity: .48; cursor: not-allowed; }
+.triposr-input-tab { display: grid; min-height: 475px; place-items: center; gap: .75rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-background); }
+.triposr-input-tab img { display: block; max-width: min(100%, 480px); max-height: 450px; object-fit: contain; }
+.triposr-input-tab div { display: grid; gap: .15rem; text-align: center; }
+.triposr-input-tab strong { color: var(--color-text-primary); font-size: .8rem; }
+.triposr-input-tab span { color: var(--color-text-secondary); font-size: .72rem; }
+.triposr-result-panel .reconstruction-output-empty { min-height: 495px; margin: 0; }
+.reconstruction-output-empty > strong { color: var(--color-text-primary); font-size: .94rem; }
+.reconstruction-output-empty.is-processing { background: var(--color-surface-elevated); }
+.triposr-processing-mark { display: flex; align-items: center; gap: .3rem; height: 32px; }
+.triposr-processing-mark span { width: 5px; height: 10px; border-radius: 5px; background: var(--color-accent); animation: triposr-pulse .9s ease-in-out infinite alternate; }
+.triposr-processing-mark span:nth-child(2) { height: 20px; animation-delay: .15s; }
+.triposr-processing-mark span:nth-child(3) { height: 14px; animation-delay: .3s; }
+@keyframes triposr-pulse { to { transform: scaleY(.45); opacity: .45; } }
+.triposr-mesh-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; color: var(--color-text-secondary); font: 650 .68rem var(--font-mono); }
+.triposr-mesh-meta i { width: 3px; height: 3px; border-radius: 50%; background: var(--color-border-strong); }
+.triposr-result-actions { display: flex; flex-wrap: wrap; gap: .55rem; }
+.triposr-result-actions .triposr-save-button { min-height: 40px; padding: .45rem .8rem; border-radius: 5px; }
+.triposr-result-actions .triposr-save-button:enabled { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-on-accent); opacity: 1; cursor: pointer; }
+.triposr-save-message { margin: 0; color: var(--color-text-secondary); font-size: .78rem; }
+.triposr-result-note { margin: 0; color: var(--color-text-secondary); font-size: .72rem; }
+.triposr-input-panel :focus-visible,
+.triposr-result-panel :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+@media (max-width: 840px) {
+  .triposr-result-panel .reconstruction-output-empty,
+  .triposr-input-tab { min-height: 350px; }
+}
+@media (max-width: 520px) {
+  .triposr-panel-heading { align-items: center; }
+  .triposr-dropzone { min-height: 205px; }
+  .triposr-result-actions > button { flex: 1 1 calc(50% - .55rem); }
+}
