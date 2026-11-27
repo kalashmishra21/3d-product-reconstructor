@@ -1,0 +1,20 @@
+# Python 3.10, verified TripoSR T4 inference environment (runtime-required subset).
+# torch/torchvision resolve from the CUDA 12.1 PyTorch index passed by modal_app.py.
+torch==2.1.2
+torchvision==0.16.2
+transformers==4.35.0
+numpy==1.26.4
+Pillow==10.1.0
+scikit-image==0.24.0
+trimesh==4.0.5
+omegaconf==2.3.0
+einops==0.7.0
+huggingface-hub==0.17.3
+rembg==2.0.69
+onnxruntime==1.23.2
+opencv-python-headless==4.10.0.84
+fastapi==0.141.1
+python-multipart==0.0.32
+PyJWT[crypto]==2.15.1
+uvicorn==0.54.0
+modal==1.6.4
