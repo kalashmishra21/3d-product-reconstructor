@@ -14,6 +14,7 @@ from app.model_readiness import selected_model_status
 from app.auth import verified_user
 from app.inference import InferenceUnavailable, InvalidMeshOutput, worker, router as inference_router
 from app.preflight import router as preflight_router
+from app.triposr_inference import router as triposr_router
 
 
 app = FastAPI(title="3D Reconstruction API")
@@ -30,6 +31,7 @@ app.add_middleware(CORSMiddleware, allow_origins=origins,
                    allow_headers=['Authorization', 'Content-Type', 'Cache-Control'])
 app.include_router(preflight_router)
 app.include_router(inference_router)
+app.include_router(triposr_router)
 
 
 @app.middleware("http")
