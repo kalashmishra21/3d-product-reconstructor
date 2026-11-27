@@ -1,84 +1,101 @@
-# Pixel3Mesh
+# Pixel3Mesh — Image to 3D Reconstruction
 
-Pixel3Mesh is an image-to-3D reconstruction research project with a React, Vite and Three.js frontend, a FastAPI backend, and Supabase authentication and private history. The public frontend is [3d-product-reconstructor.pages.dev](https://3d-product-reconstructor.pages.dev/).
+Pixel3Mesh is an interactive research application for exploring approximate 3D representations from a single product photograph. It brings image processing, learned reconstruction, mesh inspection, and private reconstruction history into one web workspace.
 
-## Application
+[Open the Pixel3Mesh website](https://3d-product-reconstructor.pages.dev/)
 
-The reconstruction workspace accepts one JPEG, PNG or WebP image (up to 10 MB), removes its background with U2NETP, and sends it to an authenticated TripoSR inference worker. A successful request returns a colored, variable-size triangle mesh for interactive viewing and OBJ/GLB export. No camera JSON is required. Output is a single-view estimate; hidden surfaces and arbitrary-photo generalization are not guaranteed.
+![Pixel3Mesh landing page in Ivory Atelier](assets/readme/landing.jpg)
 
-The TripoSR adapter is isolated from the API-only startup path. The API reports liveness separately from inference readiness and rejects inference with HTTP 503 when no compatible worker is configured. The current development demo used an authenticated temporary HTTPS connection to a Colab T4; it is not permanent hosting. Its checkpoint was loaded from the official [stabilityai/TripoSR model](https://huggingface.co/stabilityai/TripoSR), with SHA-256 `429e2c6b22a0923967459de24d67f05962b235f79cde6b032aa7ed2ffcd970ee`. Background removal used U2NETP from [rembg](https://github.com/danielgatis/rembg).
+## Project overview
 
-The Model Explorer preserves the original Pixel2Mesh graph-deformation research visualization. It is research history, not the active TripoSR inference architecture.
+Choose a product image, check that it is ready, and request a new 3D reconstruction. The generated colored triangle mesh can be inspected in the browser and exported for further use. A single photograph does not show every surface, so the result is an estimate rather than a complete scan.
 
-![Pixel2Mesh research Model Explorer in Ivory Atelier](assets/readme/model.jpg)
+## Features
 
-The custom ResNet18 + 2,048-point decoder and predicted-depth research baseline remains preserved in Google Drive at `MyDrive/Pixel3Mesh_SixCategory_FINAL_20261126/`. Its checkpoint SHA-256 is `ea861cc8f2120d80a8509b2581949445ca8aa73e1d274ba2882ed37e770f3500`. It is not silently substituted for TripoSR inference. Historical training source, data tooling, notebooks and checkpoints remain in their existing locations.
+- Single JPEG, PNG, or WebP image upload with drag and drop, preview, and local validation.
+- Authenticated preflight checks for image validity, API connectivity, and reconstruction service readiness.
+- Automatic foreground preprocessing in the reconstruction service.
+- Interactive mesh inspection with Solid, Wireframe, and Vertices modes.
+- ISO, Front, Rear, Left, Right, Side, Top, and Bottom camera presets, plus reset, zoom, pan, and fullscreen controls.
+- OBJ and GLB export for generated geometry.
+- Supabase sign-in and owner-scoped reconstruction history with private artifacts.
+- Ivory Atelier and Forest Studio themes.
 
-## Authentication and history
+## Technology
 
-Supabase Auth supports email/password and Google sign-in. Reconstruction history stores owner-scoped metadata and private input/OBJ/GLB objects. The additive TripoSR history migration is in `supabase/migrations/20261127180000_triposr_reconstruction_outputs.sql`; it preserves existing records. It passed local PostgreSQL/pgTAP tests but has not been applied to hosted production. Saving TripoSR results to hosted history therefore remains unavailable until that migration and its private Storage policies are approved and applied.
+React, Vite, Three.js, FastAPI, PyTorch, Supabase Auth and Storage, Cloudflare Pages, and Modal deployment configuration.
 
-## Local setup
+The active single-image inference adapter uses the official pretrained [TripoSR implementation](https://github.com/VAST-AI-Research/TripoSR) and [Stability AI checkpoint](https://huggingface.co/stabilityai/TripoSR). Pixel3Mesh integrates the model; those pretrained weights are not represented as weights trained by this project. The original Pixel2Mesh research code and the separately trained ResNet18-based six-category baseline remain preserved for study.
 
-Use Python 3.11 and Node.js 22.18 or later.
+## Application flow
 
-1. Install the API-only dependencies:
+```mermaid
+flowchart LR
+  A[Product photo] --> B[Image preflight]
+  B --> C[Automatic preprocessing]
+  C --> D[Reconstruction engine]
+  D --> E[Predicted mesh]
+  E --> F[Interactive Three.js viewer]
+  F --> G[OBJ / GLB export]
+  F --> H[Private history]
+```
 
-   ```powershell
-   cd backend
-   py -3.11 -m venv .venv
-   .venv\Scripts\python.exe -m pip install -e ".[dev]"
-   ```
+### Research architecture
 
-2. Create ignored `backend/.env.local` with `SUPABASE_URL` set to the public project URL. This file must not contain a service-role key.
+The Model Explorer presents the historical Pixel2Mesh graph-based mesh-deformation architecture as research context. It is distinct from the current single-image inference adapter. Historical training source, notebooks, evaluation utilities, and checkpoints are retained in their existing project and Drive locations.
 
-3. Start the API:
+## Getting started
 
-   ```powershell
-   .venv\Scripts\python.exe -m app.local_start
-   ```
+### Requirements
 
-4. Create ignored `frontend/.env.local` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. The anon key is public; never use a service-role key in the frontend. Then start the frontend:
+- Node.js 22.18 or later.
+- Python 3.11 for the API-only application.
+- A configured Supabase project for authentication and private history.
+- A separately configured compatible inference worker for live reconstruction.
 
-   ```powershell
-   cd ..\frontend
-   npm ci
-   npm run dev -- --host 127.0.0.1 --port 5173
-   ```
+### Configure and run the API
 
-5. Add `http://127.0.0.1:5173/auth/callback` to Supabase Auth's redirect allowlist. Configure `CORS_ORIGINS` for the exact frontend origin. Sign in normally at `/login`.
+```powershell
+cd backend
+py -3.11 -m venv .venv
+.venv\Scripts\python.exe -m pip install -e ".[dev]"
+Copy-Item .env.example .env.local
+.venv\Scripts\python.exe -m app.local_start
+```
 
-The worker requires the verified TripoSR bundle, its isolated Python environment, and `TRIPOSR_ROOT`, `TRIPOSR_PYTHON`, `TRIPOSR_CHECKPOINT_SHA256`, and `TRIPOSR_DEVICE`. A temporary remote worker may additionally use `TRIPOSR_REMOTE_URL` (HTTPS only) and `TRIPOSR_REMOTE_TOKEN`. Never commit the token or model weights.
+Set `SUPABASE_URL` and the exact local `CORS_ORIGINS` in the ignored `backend/.env.local`. The API-only service can provide health and image preflight when no model worker is configured; reconstruction then returns an honest unavailable response.
 
-## API
+### Configure and run the frontend
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| GET | `/api/v1/health` | API liveness |
-| GET | `/api/v1/readiness` | Existing custom-engine readiness |
-| GET | `/api/v1/triposr/readiness` | Authenticated TripoSR readiness |
-| POST | `/api/v1/triposr/reconstruct` | Authenticated single-image inference; multipart field `image` |
-| POST | `/api/v1/reconstructions/preflight` | Existing authenticated image preflight |
-| POST | `/api/v1/reconstructions/infer` | Backward-compatible calibrated custom-model route |
+```powershell
+cd frontend
+npm ci
+Copy-Item .env.example .env.local
+npm run dev -- --host 127.0.0.1 --port 5173
+```
 
-## Verification
+Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and, when the API is hosted separately, `VITE_API_BASE_URL` in the ignored `frontend/.env.local`. The Supabase anon key is intended for browser use; never put a service-role key in frontend configuration. Allow `http://127.0.0.1:5173/auth/callback` in the Supabase Auth redirect list for local development.
 
-Executed locally on 27 November 2026:
+For local model inference, configure the verified worker settings documented under `backend/deploy/` and provide the private checkpoint through the approved artifact/cache path. Do not commit model weights, private artifacts, or runtime credentials.
 
-- Backend: 76 tests passed.
-- Frontend: 105 tests passed.
-- Vite production build: passed.
-- Local Supabase: 72 pgTAP assertions passed across five files, including the additive variable-geometry history and RLS tests. Hosted migration was not applied.
-- Authenticated browser flow: real Wikimedia Speaker photograph uploaded through `/reconstruct`; FastAPI returned HTTP 200 from the TripoSR worker; the viewer displayed a new prediction with 57,006 vertices and 114,004 faces; OBJ download was parsed and its indices and coordinates validated.
-- Inference provenance: official checkpoint SHA above; the Colab T4 reported 9.96 s model initialization and the live browser request reported 5.49 s inference. The browser test used a temporary tunnel, not a deployed service.
-- Ivory Atelier loaded in a fresh browser profile. The screenshot above is a genuine browser capture of the restored Model Explorer.
+## Deployment status
 
-The public Cloudflare frontend remains on its prior deployment. No public backend, TripoSR service or hosted database migration has been deployed.
+The public Cloudflare Pages frontend is available at [3d-product-reconstructor.pages.dev](https://3d-product-reconstructor.pages.dev/). Backend and GPU inference deployment must be verified separately before describing live public reconstruction as available. The Modal configuration under `backend/deploy/` is deployment preparation; it does not by itself indicate a running cloud service. The additive history migration is under `supabase/migrations/`; hosted migration and private Storage policy changes require an approved production rollout.
 
-## Deployment
+## Future enhancements
 
-The API-only Cloud Run preparation remains under `backend/deploy/`; it does not package TripoSR weights. A GPU inference deployment still needs an approved GCP project, private checkpoint artifact storage, a GPU-capable service configuration, secrets and measured deployment validation. Cloudflare Pages, Supabase and Colab were not changed by this local integration.
+### E-commerce browser extension
 
-## Third-party attribution
+The proposed extension will let a user request an approximate 3D product representation while browsing an e-commerce listing such as Amazon or Flipkart. It could identify permitted product photographs, start a reconstruction, and show the result in a side panel or embedded viewer with rotation, zoom, and alternate views. This extension is a future enhancement and is not implemented in this repository.
 
-TripoSR source and pretrained weights are provided by [VAST-AI-Research/TripoSR](https://github.com/VAST-AI-Research/TripoSR) and [Stability AI](https://huggingface.co/stabilityai/TripoSR) under their published license terms. Background removal uses U2NETP via [rembg](https://github.com/danielgatis/rembg); retain its Apache-2.0 attribution. The TripoSR compatibility package uses a CPU scikit-image marching-cubes adapter; model inference remains on CUDA.
+Other possible improvements include reconstruction quality, texture fidelity, inference latency, and broader product coverage.
+
+## Contributing
+
+Pixel3Mesh is open to contributions and further enhancements. Developers, researchers, and contributors interested in computer vision, 3D reconstruction, multimodal AI, and interactive web experiences are welcome to contribute. Contributions that improve reconstruction quality, performance, usability, and future browser-extension integration are particularly encouraged.
+
+Fork the repository, create a focused branch, make and test your change, then open a pull request describing its behavior and verification. Keep credentials, model weights, and private datasets out of commits.
+
+## License and acknowledgments
+
+The repository does not currently include a root-level `LICENSE` file for project code. TripoSR source and pretrained weights retain their upstream license and attribution requirements. Background preprocessing uses U2NETP through [rembg](https://github.com/danielgatis/rembg); retain the applicable upstream notices in redistributed bundles. Do not redistribute model artifacts unless their terms permit it.
