@@ -126,7 +126,7 @@ export function TriposrMeshViewer({ prediction, className = '' }) {
     } catch { /* Fullscreen is optional in embedded browsers. */ }
   }
 
-  return <section className={`triposr-viewer-shell ${className}`} aria-label="3D model inspection">
+  return <section className={`triposr-viewer-shell ${className}`} ref={wrapperRef} aria-label="3D model inspection">
     <div className="triposr-viewer-toolbar">
       <div className="triposr-control-group" role="group" aria-label="Mesh rendering mode">
         <span className="triposr-toolbar-label">DISPLAY</span>
@@ -143,7 +143,7 @@ export function TriposrMeshViewer({ prediction, className = '' }) {
       <span className="triposr-toolbar-label">VIEW</span>
       {VIEW_OPTIONS.map(([value, label]) => <button key={value} type="button" className={view === value ? 'is-active' : ''} aria-pressed={view === value} onClick={() => cameraChanged(value)}>{label}</button>)}
     </div>
-    <div className="triposr-viewer" ref={wrapperRef}>
+    <div className="triposr-viewer">
       <Canvas frameloop="demand" dpr={[1, 1.5]} camera={{ position: [3, 2.2, 4], fov: 38, near: 0.01, far: 100 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
         fallback={<p className="triposr-viewer-fallback">3D viewing is unavailable in this browser. You can still download the generated model.</p>}>
