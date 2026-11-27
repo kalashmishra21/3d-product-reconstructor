@@ -35,7 +35,7 @@ test('raw geometry and OBJ export preserve Stage-3 coordinates and indexed topol
   assert.deepEqual(mesh.vertices, original)
 
   const result = await serializeStage3(mesh, 'obj', { objectName: 'Whiteboard' })
-  assert.equal(result.filename, 'whiteboard-stage3.obj')
+  assert.equal(result.filename, 'whiteboard-predicted-visible-surface.obj')
   assert.ok(result.sizeBytes > 0)
   const lines = (await result.blob.text()).split(/\r?\n/)
   const vertices = lines.filter((line) => line.startsWith('v '))
@@ -66,7 +66,7 @@ test('binary GLB contains the same raw positions and 4,928 indexed triangles', a
   try {
     const mesh = validMesh()
     const result = await serializeStage3(mesh, 'glb', { sourceFilename: 'office-chair.jpg' })
-    assert.equal(result.filename, 'office-chair-stage3.glb')
+    assert.equal(result.filename, 'office-chair-predicted-visible-surface.glb')
     const buffer = await result.blob.arrayBuffer()
     const view = new DataView(buffer)
     assert.equal(view.getUint32(0, true), 0x46546c67) // glTF magic

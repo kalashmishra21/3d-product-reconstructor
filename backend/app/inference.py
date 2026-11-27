@@ -5,15 +5,19 @@ import math
 import os
 import queue
 import subprocess
+import sys
 import tempfile
 import threading
+from contextlib import contextmanager
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from starlette.concurrency import run_in_threadpool
 
 from app.auth import verified_user
 from app.preflight import read_validated_image
+from app.geometry_contract import validate_reconstruction
+from app.model_readiness import selected_model_status
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -30,8 +34,17 @@ class InvalidMeshOutput(Exception):
     """The worker response did not contain a valid final Stage-3 mesh."""
 
 
+class InvalidCameraInput(Exception):
+    """The calibrated camera is missing or incompatible with the selected model."""
+
+
 def validate_mesh(mesh):
     """Reject malformed, non-finite, or out-of-range worker output."""
+    if isinstance(mesh, dict) and mesh.get('schema_version') == 2:
+        try:
+            return validate_reconstruction(mesh)
+        except ValueError as exc:
+            raise InvalidMeshOutput('Invalid reconstruction geometry') from exc
     if not isinstance(mesh, dict) or any(mesh.get(key) != value for key, value in {
         "status": "complete", "model": "Pixel2Mesh", "stage": 3,
         "vertices_count": 2466, "faces_count": 4928,
@@ -69,15 +82,23 @@ class ModelWorker:
         self._responses = None
 
     def _start(self):
-        executable = os.getenv("P2M_PYTHON")
-        if executable is None:
-            executable = ROOT / ".venv-p2m" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+        engine = os.getenv("RECONSTRUCTION_ENGINE", "six_category")
+        if engine == "legacy_pixel2mesh":
+            executable = os.getenv("P2M_PYTHON") or ROOT / ".venv-p2m" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+            working_directory = P2M
+        elif engine == "six_category":
+            if selected_model_status().get("reason") != "inference_bundle_not_verified":
+                raise InferenceUnavailable("Selected checkpoint is missing or unverified")
+            executable = os.getenv("PIXEL3MESH_PYTHON", sys.executable)
+            working_directory = ROOT
+        else:
+            raise InferenceUnavailable("Unsupported reconstruction engine")
         if not Path(executable).is_file():
-            raise InferenceUnavailable("Pixel2Mesh Python environment is unavailable")
+            raise InferenceUnavailable("Model Python environment is unavailable")
         try:
             self._process = subprocess.Popen(
                 [str(executable), "-u", str(WORKER_SCRIPT)],
-                cwd=P2M,
+                cwd=working_directory,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=None,
@@ -85,7 +106,7 @@ class ModelWorker:
                 encoding="utf-8",
             )
         except OSError as exc:
-            raise InferenceUnavailable("Pixel2Mesh worker could not start") from exc
+            raise InferenceUnavailable("Model worker could not start") from exc
         self._responses = queue.Queue(maxsize=1)
         process = self._process
         responses = self._responses
@@ -97,28 +118,50 @@ class ModelWorker:
 
         threading.Thread(target=read_responses, daemon=True).start()
 
-    def infer(self, image_path: Path):
-        with self._lock:
-            if self._process is None or self._process.poll() is not None:
-                self._start()
-            try:
-                self._process.stdin.write(json.dumps({"image_path": str(image_path)}) + "\n")
-                self._process.stdin.flush()
-                line = self._responses.get(timeout=180)
-            except (OSError, BrokenPipeError, queue.Empty) as exc:
-                self._stop()
-                raise InferenceUnavailable("Pixel2Mesh worker did not respond") from exc
-            if line is None:
-                self._stop()
-                raise InferenceUnavailable("Pixel2Mesh worker exited unexpectedly")
-            try:
-                response = json.loads(line)
-            except ValueError as exc:
-                raise InvalidMeshOutput("Pixel2Mesh worker returned invalid JSON") from exc
-            if not isinstance(response, dict):
-                raise InvalidMeshOutput("Pixel2Mesh worker returned an invalid response")
-            if response.get("ok") is not True:
-                raise InferenceUnavailable("Pixel2Mesh inference failed")
+    @contextmanager
+    def _admission(self):
+        if not self._lock.acquire(blocking=False):
+            raise InferenceUnavailable('Inference worker is busy')
+        try:
+            yield
+        finally:
+            self._lock.release()
+
+    def _request(self, payload: dict):
+        if self._process is None or self._process.poll() is not None:
+            self._start()
+        try:
+            self._process.stdin.write(json.dumps(payload) + "\n")
+            self._process.stdin.flush()
+            line = self._responses.get(timeout=180)
+        except (OSError, BrokenPipeError, queue.Empty) as exc:
+            self._stop()
+            raise InferenceUnavailable("Model worker did not respond") from exc
+        if line is None:
+            self._stop()
+            raise InferenceUnavailable("Model worker exited unexpectedly")
+        try:
+            response = json.loads(line)
+        except ValueError as exc:
+            raise InvalidMeshOutput("Model worker returned invalid JSON") from exc
+        if not isinstance(response, dict):
+            raise InvalidMeshOutput("Model worker returned an invalid response")
+        if response.get("ok") is not True:
+            if response.get("error") == "invalid_camera_or_output":
+                raise InvalidCameraInput("Camera or model output is invalid")
+            raise InferenceUnavailable("Model inference failed")
+        return response
+
+    def ready(self):
+        with self._admission():
+            return self._request({"operation": "ready"}).get("ready") is True
+
+    def infer(self, image_path: Path, camera=None):
+        with self._admission():
+            payload = {"image_path": str(image_path)}
+            if camera is not None:
+                payload["camera"] = camera
+            response = self._request(payload)
             return validate_mesh(response.get("mesh"))
 
     def _stop(self):
@@ -132,18 +175,19 @@ class ModelWorker:
 worker = ModelWorker()
 
 
-def infer_image(data: bytes, image_format: str):
+def infer_image(data: bytes, image_format: str, camera=None):
     """Give the worker only a validated, short-lived local image file."""
     extension = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}[image_format]
     with tempfile.TemporaryDirectory(prefix="reconstruct-") as folder:
         image_path = Path(folder) / f"input.{extension}"
         image_path.write_bytes(data)
-        return worker.infer(image_path)
+        return worker.infer(image_path, camera)
 
 
 @router.post("/infer")
 async def infer_reconstruction(
     image: UploadFile = File(...),
+    camera: str | None = Form(default=None),
     _user: dict[str, str] = Depends(verified_user),
 ):
     """Revalidate input and return only genuine final-stage model coordinates."""
@@ -151,8 +195,20 @@ async def infer_reconstruction(
         data, metadata = await read_validated_image(image)
     finally:
         await image.close()
+    camera_data = None
+    if camera is not None:
+        try:
+            camera_data = json.loads(camera)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="Camera must be valid JSON.") from exc
+        if not isinstance(camera_data, dict):
+            raise HTTPException(status_code=422, detail="Camera must be an object.")
     try:
-        return await run_in_threadpool(infer_image, data, metadata["format"])
+        if camera_data is None:
+            return await run_in_threadpool(infer_image, data, metadata["format"])
+        return await run_in_threadpool(infer_image, data, metadata["format"], camera_data)
+    except InvalidCameraInput as exc:
+        raise HTTPException(status_code=422, detail="A valid calibrated 224x224 camera is required.") from exc
     except InferenceUnavailable as exc:
         raise HTTPException(status_code=503, detail="Model inference is unavailable. Try again shortly.") from exc
     except InvalidMeshOutput as exc:

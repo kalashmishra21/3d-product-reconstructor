@@ -1,6 +1,7 @@
 """Verify Supabase Auth access tokens using the project's public signing keys."""
 
 import os
+import ipaddress
 from functools import lru_cache
 from urllib.error import URLError
 from urllib.parse import urlparse
@@ -23,7 +24,26 @@ def _unauthorized() -> HTTPException:
 def _issuer() -> str:
     url = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
     parsed = urlparse(url)
-    if parsed.scheme != "https" or not parsed.netloc or parsed.path or parsed.query or parsed.fragment:
+    hostname = parsed.hostname or ""
+    try:
+        loopback_host = hostname.lower().rstrip(".") == "localhost" or ipaddress.ip_address(hostname).is_loopback
+    except ValueError:
+        loopback_host = hostname.lower().rstrip(".") == "localhost"
+    local_http_enabled = (
+        parsed.scheme == "http"
+        and loopback_host
+        and os.getenv("ENVIRONMENT", "production").strip().lower() == "development"
+        and os.getenv("SUPABASE_ALLOW_HTTP_LOOPBACK", "false").strip().lower() == "true"
+    )
+    if (
+        (parsed.scheme != "https" and not local_http_enabled)
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.path
+        or parsed.query
+        or parsed.fragment
+    ):
         raise HTTPException(status_code=503, detail="Supabase authentication is not configured")
     return f"{url}/auth/v1"
 

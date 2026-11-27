@@ -6,8 +6,8 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     const boot = document.documentElement.dataset.theme
     if (boot === 'forest' || boot === 'ivory') return boot
-    try { return readTheme(window.localStorage, matchMedia('(prefers-color-scheme: dark)').matches) }
-    catch { return 'forest' }
+    try { return readTheme(window.localStorage) }
+    catch { return 'ivory' }
   })
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -16,7 +16,7 @@ export function ThemeProvider({ children }) {
   }, [theme])
   useEffect(() => {
     const sync = event => {
-      if (event.key === THEME_KEY || event.key === null) setTheme(resolveTheme(event.newValue, matchMedia('(prefers-color-scheme: dark)').matches))
+      if (event.key === THEME_KEY || event.key === null) setTheme(resolveTheme(event.newValue))
     }
     window.addEventListener('storage', sync)
     return () => window.removeEventListener('storage', sync)

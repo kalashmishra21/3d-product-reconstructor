@@ -1,0 +1,18 @@
+FROM python:3.11-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/backend \
+    ENVIRONMENT=production \
+    RECONSTRUCTION_ENGINE=disabled \
+    PORT=8080
+
+WORKDIR /app
+
+COPY backend/pyproject.toml /tmp/backend/pyproject.toml
+COPY backend/app /app/backend/app
+RUN pip install --no-cache-dir /tmp/backend
+
+USER 10001:10001
+EXPOSE 8080
+CMD ["sh", "-c", "exec uvicorn app.main:app --app-dir /app/backend --host 0.0.0.0 --port ${PORT:-8080} --workers 1"]

@@ -20,8 +20,8 @@ export function ResultViewport({ mesh, objectName }) {
       <div className="result-camera-group" role="group" aria-label="Camera controls"><button type="button" className="result-fit" onClick={() => setFitVersion(v => v+1)} aria-label="Fit mesh in current view">Fit</button><button type="button" className="result-reset" onClick={() => { setView('iso'); setResetVersion(v => v+1) }} aria-label="Reset to isometric view">Reset</button></div>
     </div>
     <div className="result-view-presets" role="group" aria-label="Camera view presets"><span className="result-tool-label">VIEW</span>{[['iso','ISO'],['front','Front'],['side','Side'],['top','Top']].map(([value,label]) => <button key={value} type="button" aria-pressed={view === value} onClick={() => { setView(value); setResetVersion(v => v+1) }}>{label}</button>)}<span className="result-stage-label">STAGE 03</span></div>
-    <div className="result-stage-canvas" role="group" aria-label={`${objectName || 'Reconstructed object'} real Stage-3 mesh. Drag to rotate, scroll or pinch to zoom. Camera presets and Fit are available above.`}>
-      <ViewerBoundary mesh={mesh}><Suspense fallback={<p className="result-static-state" role="status">Preparing real Stage-3 geometry…</p>}><ResultMeshScene mesh={mesh} mode={mode} view={view} fitVersion={fitVersion} resetVersion={resetVersion} /></Suspense></ViewerBoundary>
+    <div className="result-stage-canvas" role="group" aria-label={`${objectName || 'Reconstructed object'} predicted visible-surface mesh. Drag to rotate, scroll or pinch to zoom. Camera presets and Fit are available above.`}>
+      <ViewerBoundary mesh={mesh}><Suspense fallback={<p className="result-static-state" role="status">Preparing predicted mesh geometry…</p>}><ResultMeshScene mesh={mesh} mode={mode} view={view} fitVersion={fitVersion} resetVersion={resetVersion} /></Suspense></ViewerBoundary>
     </div>
     <div className="result-view-caption"><span aria-live="polite">{mode.toUpperCase()} · {view.toUpperCase()} VIEW</span><span>DRAG TO ORBIT · SCROLL TO ZOOM</span></div>
   </div>

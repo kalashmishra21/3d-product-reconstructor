@@ -1,0 +1,63 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: pixel3mesh-api
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "1"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      serviceAccountName: pixel3mesh-runtime@REPLACE_WITH_PROJECT_ID.iam.gserviceaccount.com
+      containerConcurrency: 1
+      timeoutSeconds: 180
+      containers:
+        - image: REGION-docker.pkg.dev/REPLACE_WITH_PROJECT_ID/pixel3mesh/pixel3mesh-api:REPLACE_WITH_TAG
+          ports:
+            - name: http1
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          env:
+            - name: SUPABASE_URL
+              value: https://REPLACE_WITH_SUPABASE_PROJECT.supabase.co
+            - name: ENVIRONMENT
+              value: production
+            - name: SUPABASE_ALLOW_HTTP_LOOPBACK
+              value: "false"
+            - name: CORS_ORIGINS
+              value: https://3d-product-reconstructor.pages.dev
+            - name: PIXEL3MESH_MODEL_BUCKET
+              value: REPLACE_WITH_PRIVATE_MODEL_BUCKET
+            - name: PIXEL3MESH_CHECKPOINT_OBJECT
+              value: Pixel3Mesh_SixCategory_FINAL_20261126/best_model.pt
+            - name: PIXEL3MESH_CONFIG_OBJECT
+              value: Pixel3Mesh_SixCategory_FINAL_20261126/inference_config.json
+            - name: RECONSTRUCTION_ENGINE
+              value: six_category
+            - name: PIXEL3MESH_DEVICE
+              value: cpu
+            - name: PORT
+              value: "8080"
+          startupProbe:
+            httpGet:
+              path: /api/v1/readiness
+              port: 8080
+            timeoutSeconds: 5
+            periodSeconds: 10
+            failureThreshold: 24
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8080
+            timeoutSeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+  traffic:
+    - percent: 100
+      latestRevision: true

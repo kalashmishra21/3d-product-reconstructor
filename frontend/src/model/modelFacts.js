@@ -1,8 +1,10 @@
-export const pipeline = Object.freeze(['RGB image', 'VGG16', 'Image features', 'Graph deformation', 'Stage 01', 'Stage 02', 'Stage 03'])
+// Historical Pixel2Mesh research visualization. These values describe the
+// original graph-deformation architecture, not the active inference service.
+export const pipeline = Object.freeze([
+  'RGB image', 'VGG16 image features', 'Graph feature fusion',
+  'Coarse mesh deformation', 'Mesh upsampling', 'Fine mesh deformation',
+])
 
-// IDs follow dataset_tools/prepare_pixel2mesh_subset.py; labels follow the
-// ShapeNetCore v1 synset mapping used by PyTorch3D:
-// https://github.com/facebookresearch/pytorch3d/blob/main/pytorch3d/datasets/shapenet/shapenet_synset_dict_v1.json
 export const trainedCategories = Object.freeze([
   ['02691156', 'Airplane'], ['02828884', 'Bench'], ['02933112', 'Cabinet'],
   ['02958343', 'Car'], ['03001627', 'Chair'], ['03211117', 'Display'],
@@ -12,13 +14,15 @@ export const trainedCategories = Object.freeze([
 ].map(([id, label]) => Object.freeze({ id, label })))
 
 export const stages = Object.freeze([
-  Object.freeze({ number: '01', vertices: 156, faces: 308, heading: 'Establish the coarse form', description: 'The first graph deformation moves a low-density ellipsoid toward an image-guided shape.' }),
-  Object.freeze({ number: '02', vertices: 618, faces: 1232, heading: 'Refine the silhouette', description: 'The mesh is unpooled to a denser topology before the next graph deformation.' }),
-  Object.freeze({ number: '03', vertices: 2466, faces: 4928, heading: 'Produce final geometry', description: 'The third deformation produces the final vertex coordinates and triangle faces used by the viewer and exports.' }),
+  Object.freeze({ number: '01', vertices: 156, faces: 308, heading: 'Establish the coarse form', description: 'The first graph deformation moves the initial ellipsoid toward a coarse object shape.' }),
+  Object.freeze({ number: '02', vertices: 618, faces: 1232, heading: 'Refine the silhouette', description: 'Graph unpooling increases the mesh resolution before a second deformation.' }),
+  Object.freeze({ number: '03', vertices: 2466, faces: 4928, heading: 'Complete the research pipeline', description: 'The final historical stage refines the research mesh. These fixed counts are not used by the current reconstruction interface.' }),
 ])
 
 export const metrics = Object.freeze([
-  Object.freeze({ label: 'Chamfer Distance', value: '0.037181', description: 'A test-set distance between sampled predicted and reference surfaces; lower is better.' }),
-  Object.freeze({ label: 'F1 @ τ', value: '0.000640', description: 'A test-set precision/recall measure at the evaluator’s smaller distance threshold.' }),
-  Object.freeze({ label: 'F1 @ 2τ', value: '0.001722', description: 'The same test-set measure at twice that distance threshold.' }),
+  Object.freeze({ label: 'Chamfer Distance', value: '0.037181', description: 'Historical Pixel2Mesh benchmark result; it does not describe the current inference service.' }),
+  Object.freeze({ label: 'F1 @ τ', value: '0.000640', description: 'Historical Pixel2Mesh benchmark result; it does not describe the current inference service.' }),
+  Object.freeze({ label: 'F1 @ 2τ', value: '0.001722', description: 'Historical Pixel2Mesh benchmark result; it does not describe the current inference service.' }),
 ])
+
+export const researchStatus = 'Pixel2Mesh is preserved as the original research architecture. It is not the active inference engine.'

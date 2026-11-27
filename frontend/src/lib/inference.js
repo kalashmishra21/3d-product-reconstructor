@@ -2,7 +2,7 @@ import { api } from './api.js'
 import { getCurrentSession } from './auth.js'
 import { validateMeshResponse } from '../reconstruction/mesh.js'
 
-export async function inferImage(file, { signal, client = api, sessionProvider = getCurrentSession } = {}) {
+export async function inferImage(file, { signal, camera, client = api, sessionProvider = getCurrentSession } = {}) {
   const session = await sessionProvider()
   if (!session?.access_token) {
     const error = new Error('Your session has ended. Sign in to reconstruct a mesh.')
@@ -11,6 +11,7 @@ export async function inferImage(file, { signal, client = api, sessionProvider =
   }
   const form = new FormData()
   form.append('image', file, file.name)
+  if (camera !== undefined) form.append('camera', JSON.stringify(camera))
   const started = typeof performance !== 'undefined' ? performance.now() : Date.now()
   const { data } = await client.post('/api/v1/reconstructions/infer', form, {
     headers: { Authorization: `Bearer ${session.access_token}` },
@@ -23,6 +24,10 @@ export async function inferImage(file, { signal, client = api, sessionProvider =
     throw error
   }
   return {
+    ...(data.schema_version === 2 ? {
+      schema_version: 2, model_version: data.model_version,
+      output_type: data.output_type, global_points: data.global_points,
+    } : {}),
     status: data.status,
     model: data.model,
     stage: data.stage,

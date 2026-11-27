@@ -1,4 +1,4 @@
-"""Headless Pixel2Mesh worker, launched with the existing .venv-p2m interpreter.
+"""Headless reconstruction worker with a versioned model choice.
 
 The only stdout output is one JSON response per request. Model diagnostics use
 stderr so the parent FastAPI process can keep the worker alive between images.
@@ -15,16 +15,37 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 P2M = ROOT / "Pixel2Mesh"
-sys.path.insert(0, str(P2M))
-os.chdir(P2M)
+ENGINE = os.getenv("RECONSTRUCTION_ENGINE", "six_category")
+if ENGINE == "legacy_pixel2mesh":
+    sys.path.insert(0, str(P2M))
+    os.chdir(P2M)
+else:
+    sys.path.insert(0, str(ROOT / "backend"))
 
 _model = None
 _faces = None
+_adapter = None
 
 
 def load_model_once():
-    """Load verified V3 weights and ellipsoid topology once per worker."""
-    global _model, _faces
+    """Load the selected model once per worker process."""
+    global _model, _faces, _adapter
+    if ENGINE == "six_category":
+        if _adapter is not None:
+            return 0.0
+        from app.six_category_adapter import SixCategoryAdapter
+        import torch
+
+        checkpoint = Path(os.environ["PIXEL3MESH_CHECKPOINT"])
+        config = Path(os.getenv("PIXEL3MESH_CONFIG", checkpoint.with_name("inference_config.json")))
+        device = os.getenv("PIXEL3MESH_DEVICE", "cpu")
+        if device.startswith("cuda") and not torch.cuda.is_available():
+            raise RuntimeError("Configured CUDA device is unavailable")
+        started = time.perf_counter()
+        _adapter = SixCategoryAdapter(checkpoint, config, device)
+        return round((time.perf_counter() - started) * 1000, 1)
+    if ENGINE != "legacy_pixel2mesh":
+        raise RuntimeError("Unsupported reconstruction engine")
     if _model is not None:
         return 0.0
 
@@ -64,9 +85,11 @@ def load_model_once():
     return round((time.perf_counter() - started) * 1000, 1)
 
 
-def infer_image(image_path: Path):
-    """Reuse ReconstructorDemoDataset preprocessing and return actual Stage 3."""
+def infer_image(image_path: Path, camera=None):
+    """Run the configured model on validated image bytes and camera metadata."""
     init_ms = load_model_once()
+    if ENGINE == "six_category":
+        return _adapter.infer(image_path, camera, model_init_ms=init_ms)
     import torch
     from datasets.reconstructor import ReconstructorDemoDataset
     from options import options
@@ -108,9 +131,17 @@ def infer_image(image_path: Path):
 
 def main():
     for line in sys.stdin:
+        request = {}
         try:
             request = json.loads(line)
-            response = {"ok": True, "mesh": infer_image(Path(request["image_path"]))}
+            if request.get("operation") == "ready":
+                init_ms = load_model_once()
+                response = {"ok": True, "ready": True, "model_init_ms": init_ms}
+            else:
+                response = {"ok": True, "mesh": infer_image(Path(request["image_path"]), request.get("camera"))}
+        except ValueError:
+            traceback.print_exc(file=sys.stderr)
+            response = {"ok": False, "error": "invalid_camera_or_output" if request.get("operation") != "ready" else "model_initialization_failed"}
         except Exception:
             traceback.print_exc(file=sys.stderr)
             response = {"ok": False}

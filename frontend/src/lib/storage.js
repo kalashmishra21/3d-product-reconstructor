@@ -20,8 +20,10 @@ function pathOrThrow(path, bucket) {
   const validOwner = UUID.test(parts[0] ?? '')
   const avatar = parts.length === 2 && /^([0-9a-f-]{36})\.(jpg|png|webp)$/i.exec(parts[1])
   const artifact = parts.length === 3 && UUID.test(parts[1]) && /^(source\.(jpg|png|webp)|stage3\.(json|obj|glb))$/i.test(parts[2])
+  const modelOutput = parts.length === 4 && UUID.test(parts[1]) && parts[2] === 'model-v1' &&
+    /^(input\.(jpg|png|webp)|global_points\.ply|visible_surface\.obj)$/i.test(parts[3])
   if (!validOwner || bucket === 'avatars' && (!avatar || !UUID.test(avatar[1])) ||
-      bucket === 'reconstruction-artifacts' && !artifact) throw new Error('Invalid private object path')
+      bucket === 'reconstruction-artifacts' && !artifact && !modelOutput) throw new Error('Invalid private object path')
   return path
 }
 function unwrap(result) {
@@ -86,4 +88,59 @@ export async function removeObjects(bucket, paths, { client = supabase } = {}) {
   if (!Array.isArray(paths) || paths.length === 0) return []
   const api = clientOrThrow(client)
   return unwrap(await api.storage.from(bucketOrThrow(bucket)).remove(paths.map((path) => pathOrThrow(path, bucket))))
+}
+
+/** Build owner-scoped keys for variable-size Pixel3Mesh outputs. */
+export function modelOutputPath(userId, reconstructionId, kind, sourceMime) {
+  const root = `${id(userId)}/${id(reconstructionId)}/model-v1`
+  if (kind === 'input') {
+    const extension = EXTENSION[sourceMime]
+    if (!extension) throw new Error('Unsupported source MIME')
+    return `${root}/input.${extension}`
+  }
+  if (kind === 'points') return `${root}/global_points.ply`
+  if (kind === 'mesh') return `${root}/visible_surface.obj`
+  throw new Error('Unsupported model output')
+}
+
+/** Upload the three genuine request artifacts to the existing private bucket. */
+export async function uploadModelOutputSet(userId, reconstructionId, files, { client = supabase } = {}) {
+  const api = clientOrThrow(client)
+  const objects = [
+    ['input', files.input, files.input.type],
+    ['points', files.points, 'application/octet-stream'],
+    ['mesh', files.mesh, 'text/plain'],
+  ]
+  const paths = {}
+  try {
+    for (const [kind, body, contentType] of objects) {
+      const path = modelOutputPath(userId, reconstructionId, kind, files.input.type)
+      unwrap(await api.storage.from('reconstruction-artifacts').upload(path, body, {
+        contentType, upsert: false,
+      }))
+      paths[kind] = path
+    }
+    return paths
+  } catch (error) {
+    if (Object.keys(paths).length) {
+      await api.storage.from('reconstruction-artifacts').remove(Object.values(paths)).catch(() => {})
+    }
+    throw error
+  }
+}
+
+/** Download authorized private artifacts; Supabase RLS checks the current user. */
+export async function downloadModelOutputSet(paths, { client = supabase } = {}) {
+  const api = clientOrThrow(client)
+  const result = {}
+  for (const kind of ['input', 'points', 'mesh']) {
+    const path = paths?.[kind]
+    if (!path) throw new Error('Saved reconstruction is missing an artifact path')
+    pathOrThrow(path, 'reconstruction-artifacts')
+    const signed = unwrap(await api.storage.from('reconstruction-artifacts').createSignedUrl(path, 120))
+    const response = await fetch(signed.signedUrl, { cache: 'no-store' })
+    if (!response.ok) throw new Error('Private reconstruction download failed')
+    result[kind] = await response.blob()
+  }
+  return result
 }

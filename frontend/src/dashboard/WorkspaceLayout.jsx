@@ -15,7 +15,7 @@ const navigation = [
   ['/dashboard', 'Overview', 'overview'], ['/reconstruct', 'New Reconstruction', 'plus'],
   ['/history', 'History', 'history'], ['/model', 'Model', 'model'],
 ]
-const contexts = { '/dashboard': 'Overview', '/reconstruct': 'New reconstruction', '/history': 'History', '/model': 'Model baseline' }
+const contexts = { '/dashboard': 'Overview', '/reconstruct': 'New reconstruction', '/history': 'History', '/model': 'Model Explorer' }
 
 export function WorkspaceAvatar({ profile }) {
   const [failed, setFailed] = useState(false)
@@ -97,7 +97,7 @@ export function WorkspaceLayout({ user, health, pending, error, onLogout, childr
       </header>
       {error && <p className="dash-error" role="alert">{error}</p>}
       {children}
-      <footer className="dash-footer"><span>RECONSTRUCT / IMAGE TO FORM</span><Link to="/model">Pixel2Mesh · integration checkpoint</Link></footer>
+      <footer className="dash-footer"><span>PIXEL3MESH / IMAGE TO GEOMETRY</span><Link to="/model">Current trained model</Link></footer>
     </main>
     <dialog ref={profileDialog} className="profile-dialog" aria-labelledby="profile-title" onClose={() => requestAnimationFrame(() => profileOpener.current?.focus())} onClick={(event) => { if (event.target === event.currentTarget) closeProfile() }}>
       <button type="button" className="profile-dialog-close" aria-label="Close profile" onClick={closeProfile}><Icon name="close" /></button>

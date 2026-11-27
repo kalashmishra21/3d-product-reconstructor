@@ -5,6 +5,7 @@ import { inspectImageFile, validateImageFile, MAX_IMAGE_BYTES } from '../src/rec
 import { preflightImage, preflightErrorMessage } from '../src/lib/preflight.js'
 import { inferImage, inferenceErrorMessage } from '../src/lib/inference.js'
 import { deriveObjectName, validateMeshResponse, formatMilliseconds } from '../src/reconstruction/mesh.js'
+import { readFileSync } from 'node:fs'
 
 function imageFile(type = 'image/png', size = 128, name = 'object.png') {
   const file = new Blob([new Uint8Array(size)], { type })
@@ -118,4 +119,16 @@ test('mesh response validation rejects bad counts, vertices, faces, indices, and
   assert.equal(validateMeshResponse({ ...valid, faces: [[0, 1, 2.2], ...valid.faces.slice(1)] }), 'MESH DATA INVALID')
   assert.equal(formatMilliseconds(2385.8), '2,386 ms')
   assert.equal(formatMilliseconds(0), '0.0 ms')
+})
+
+test('reconstruction page accepts one RGB image and does not ask for or invent camera data', () => {
+  const page = readFileSync(new URL('../src/reconstruction/CalibratedReconstructionPage.jsx', import.meta.url), 'utf8')
+  assert.match(page, /type="file"/)
+  assert.match(page, /image\/png,image\/jpeg,image\/webp/)
+  assert.match(page, /\/api\/v1\/readiness/)
+  assert.match(page, /input_mode === 'single_rgb'/)
+  assert.match(page, /Your image stays in this browser/)
+  assert.match(page, /\/history/)
+  assert.doesNotMatch(page, /camera JSON|camera_to_world|camera matrix|inferImage\(/i)
+  assert.match(page, /disabled/)
 })
