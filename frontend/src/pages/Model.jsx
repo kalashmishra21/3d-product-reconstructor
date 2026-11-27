@@ -1,11 +1,22 @@
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Arrow } from '../components/Icons'
+import { getTriposrReadiness } from '../lib/triposr.js'
 import { metrics, researchStatus, trainedCategories } from '../model/modelFacts.js'
 import { StageProgression } from '../model/StageSelector.jsx'
 import { ModelPipeline } from '../model/ModelPipeline.jsx'
 import { MetricExplanation } from '../model/MetricExplanation.jsx'
 
 export default function Model() {
+  const [serviceState, setServiceState] = useState('checking')
+  const refreshServiceState = useCallback(async () => {
+    setServiceState('checking')
+    const result = await getTriposrReadiness()
+    setServiceState(result.ready ? 'ready' : 'unavailable')
+  }, [])
+
+  useEffect(() => { void refreshServiceState() }, [refreshServiceState])
+
   return <section className="workspace-page" aria-labelledby="model-page-title">
     <div className="workspace-page-heading">
       <div>
@@ -41,8 +52,13 @@ export default function Model() {
       </section>
       <section className="model-limitation" aria-labelledby="service-status-title">
         <p className="dash-kicker">LIVE SERVICE</p>
-        <h2 id="service-status-title">Reconstruction is unavailable</h2>
-        <p>The API is running, but no compatible reconstruction engine is configured. The image upload page will not return placeholder or saved-gallery geometry.</p>
+        <h2 id="service-status-title">{serviceState === 'ready' ? 'TripoSR inference is ready' : serviceState === 'checking' ? 'Checking TripoSR readiness' : 'TripoSR inference is unavailable'}</h2>
+        <p role="status">{serviceState === 'ready'
+          ? 'The authenticated image endpoint is ready to generate a new prediction from one RGB image.'
+          : serviceState === 'checking'
+            ? 'Checking whether the authenticated TripoSR worker is available.'
+            : 'The authenticated TripoSR worker is not ready. The upload page will not substitute saved-gallery or ground-truth geometry.'}</p>
+        {serviceState !== 'ready' && <button type="button" className="dash-text-link" onClick={() => { void refreshServiceState() }} disabled={serviceState === 'checking'}>Check service again</button>}
         <Link className="dash-text-link" to="/reconstruct">Open image reconstruction <Arrow diagonal /></Link>
       </section>
     </div>

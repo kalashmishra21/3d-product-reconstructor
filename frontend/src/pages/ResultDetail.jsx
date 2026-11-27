@@ -4,6 +4,7 @@ import { Arrow } from '../components/Icons'
 import { useReconstructionJob } from '../jobs/ReconstructionJobProvider.jsx'
 import { loadSavedResult, refreshSavedSource } from '../lib/resultDetail.js'
 import { interruptStaleReconstruction } from '../lib/reconstructions.js'
+import { getTriposrOutput, parseTriposrObj } from '../lib/triposrHistory.js'
 import { classifyProcessing, STALE_AFTER_MS } from '../jobs/stale.js'
 import { downloadPrivate } from '../lib/storage.js'
 import { ExportPanel } from '../reconstruction/ExportPanel.jsx'
@@ -11,6 +12,8 @@ import { formatMilliseconds } from '../reconstruction/mesh.js'
 import { diagnoseMesh } from '../reconstruction/meshDiagnostics.js'
 import { ResultViewport } from '../reconstruction/ResultViewport.jsx'
 import { SourceView } from '../reconstruction/SourceView.jsx'
+import { TriposrMeshViewer } from '../reconstruction/TriposrMeshViewer.jsx'
+import { downloadTriposrAsset } from '../reconstruction/triposrExport.js'
 import '../reconstruction/reconstruction.css'
 
 const READY = new Set(['completed', 'low_volume'])
@@ -30,8 +33,18 @@ export default function ResultDetail() {
     let active = true
     setLoading(true)
     setError(false)
-    loadSavedResult(id).then(async (result) => {
-      if (classifyProcessing(result.row, liveJobPhase ? id : null) === 'stale') {
+    async function loadResult() {
+      let triposr = null
+      try { triposr = await getTriposrOutput(id) } catch { /* Older records remain readable if the additive table is unavailable. */ }
+      if (triposr) {
+        const mesh = parseTriposrObj(await triposr.obj.text(), triposr.row)
+        return { row: triposr.row, mesh, triposr: true, input: triposr.input, obj: triposr.obj, glb: triposr.glb,
+          inputUrl: URL.createObjectURL(triposr.input) }
+      }
+      return loadSavedResult(id)
+    }
+    loadResult().then(async (result) => {
+      if (!result.triposr && classifyProcessing(result.row, liveJobPhase ? id : null) === 'stale') {
         const cutoff = new Date(Date.now() - STALE_AFTER_MS).toISOString()
         try {
           const updated = await interruptStaleReconstruction(id, cutoff)
@@ -45,8 +58,12 @@ export default function ResultDetail() {
     return () => { active = false }
   }, [id, liveJobPhase, retryVersion])
 
+  useEffect(() => () => {
+    if (saved?.inputUrl) URL.revokeObjectURL(saved.inputUrl)
+  }, [saved?.inputUrl])
+
   useEffect(() => {
-    if (!saved?.row?.source_path) return undefined
+    if (saved?.triposr || !saved?.row?.source_path) return undefined
     let active = true
     const timer = window.setInterval(() => {
       refreshSavedSource(saved).then((updated) => {
@@ -67,7 +84,7 @@ export default function ResultDetail() {
 
   const row = saved?.row
   const mesh = saved?.mesh
-  const hasResult = row && READY.has(row.status) && mesh && !saved.artifactError
+  const hasResult = row && (saved?.triposr || READY.has(row.status)) && mesh && !saved.artifactError
   const diagnostic = hasResult ? diagnoseMesh(mesh.vertices) : null
 
   async function prepareStoredExport(_mesh, format, { objectName, sourceFilename }) {
@@ -94,15 +111,24 @@ export default function ResultDetail() {
           <button type="button" role="tab" data-view="input" aria-selected={view === 'input'} tabIndex={view === 'input' ? 0 : -1} onClick={() => setView('input')} onKeyDown={onTabKey}>INPUT</button>
         </div>
         {view === 'mesh' && diagnostic?.degenerate && <div className="recon-volume-note" role="status"><strong>Low-volume reconstruction</strong><p>The current model produced limited geometric depth for this image.</p><span>Raw OBJ / GLB exports remain available.</span></div>}
-        {view === 'mesh' && hasResult && <ResultViewport mesh={mesh} objectName={row.object_name} />}
+        {view === 'mesh' && hasResult && (saved.triposr
+          ? <TriposrMeshViewer prediction={mesh} />
+          : <ResultViewport mesh={mesh} objectName={row.object_name} />)}
         {view === 'mesh' && !hasResult && <div className="result-detail-state" role={saved.artifactError ? 'alert' : 'status'}><p>{saved.artifactError ? 'Saved mesh data could not be opened or validated.' : row.status === 'processing' ? 'This reconstruction may still be processing in another browser session.' : row.status === 'failed' ? 'This reconstruction did not complete.' : row.status === 'interrupted' ? 'This browser-owned reconstruction was interrupted. Start a new one with the source image.' : 'No saved mesh is available.'}</p>{saved.artifactError && <button type="button" className="button secondary" onClick={() => setRetryVersion((value) => value + 1)}>Retry loading</button>}</div>}
-        {view === 'input' && saved.sourceUrl && <SourceView src={saved.sourceUrl} filename={row.source_filename} width={row.source_width} height={row.source_height} />}
-        {view === 'input' && !saved.sourceUrl && <div className="result-detail-state" role={saved.sourceError ? 'alert' : 'status'}><p>{saved.sourceError ? 'The private source image could not be opened.' : 'No source image is saved for this reconstruction.'}</p>{saved.sourceError && <button type="button" className="button secondary" onClick={() => setRetryVersion((value) => value + 1)}>Retry loading</button>}</div>}
-        <div className="recon-view-foot"><span>{view === 'mesh' ? 'PERSISTED RAW MODEL GEOMETRY' : 'ORIGINAL PRIVATE SOURCE IMAGE'}</span><span>{hasResult && view === 'mesh' ? `${mesh.vertices_count.toLocaleString()} VERTICES / ${mesh.faces_count.toLocaleString()} FACES` : row.source_filename}</span></div>
+        {view === 'input' && (saved.inputUrl || saved.sourceUrl) && <SourceView src={saved.inputUrl || saved.sourceUrl} filename={row.source_filename} width={row.source_width} height={row.source_height} />}
+        {view === 'input' && !saved.inputUrl && !saved.sourceUrl && <div className="result-detail-state" role={saved.sourceError ? 'alert' : 'status'}><p>{saved.sourceError ? 'The private source image could not be opened.' : 'No source image is saved for this reconstruction.'}</p>{saved.sourceError && <button type="button" className="button secondary" onClick={() => setRetryVersion((value) => value + 1)}>Retry loading</button>}</div>}
+        <div className="recon-view-foot"><span>{view === 'mesh' ? saved.triposr ? 'TRIPOSR PREDICTED MESH' : 'PERSISTED RAW MODEL GEOMETRY' : 'ORIGINAL PRIVATE SOURCE IMAGE'}</span><span>{hasResult && view === 'mesh' ? `${mesh.vertices.length.toLocaleString()} VERTICES / ${mesh.faces.length.toLocaleString()} FACES` : row.source_filename}</span></div>
       </section>
 
       <aside className="result-detail-sidebar"><div className="result-detail-meta"><p className="dash-kicker">RECONSTRUCTION RECORD</p><h2>{row.object_name || 'Untitled reconstruction'}</h2><p>{row.source_filename}</p><dl><div><dt>Status</dt><dd>{statusLabel[row.status] || row.status}</dd></div><div><dt>Model</dt><dd>{row.model_name || '—'}</dd></div><div><dt>Vertices</dt><dd>{row.vertices_count?.toLocaleString() || '—'}</dd></div><div><dt>Faces</dt><dd>{row.faces_count?.toLocaleString() || '—'}</dd></div><div><dt>Inference</dt><dd>{row.inference_ms != null ? formatMilliseconds(Number(row.inference_ms)) : '—'}</dd></div></dl></div>
-        {hasResult && row.obj_path && row.glb_path && <ExportPanel mesh={mesh} objectName={row.object_name || ''} sourceFilename={row.source_filename} prepareExport={prepareStoredExport} />}
+        {hasResult && !saved.triposr && row.obj_path && row.glb_path && <ExportPanel mesh={mesh} objectName={row.object_name || ''} sourceFilename={row.source_filename} prepareExport={prepareStoredExport} />}
+        {hasResult && saved.triposr && <section className="recon-export" aria-labelledby="triposr-saved-export-title">
+          <div className="recon-export-heading"><div><p className="recon-eyebrow">ASSET DELIVERY</p><h3 id="triposr-saved-export-title">Saved TripoSR exports</h3></div><span>PRIVATE FILES</span></div>
+          <div className="recon-export-actions">
+            <button type="button" onClick={() => downloadTriposrAsset({ blob: saved.obj, filename: 'triposr-predicted-mesh.obj' })}><span><strong>Download OBJ</strong><small>Saved predicted mesh geometry</small></span><span className="recon-export-meta">.OBJ ↗</span></button>
+            <button type="button" onClick={() => downloadTriposrAsset({ blob: saved.glb, filename: 'triposr-predicted-mesh.glb' })}><span><strong>Download GLB</strong><small>Saved viewer-ready geometry</small></span><span className="recon-export-meta">.GLB ↗</span></button>
+          </div>
+        </section>}
         <Link className="dash-text-link" to="/reconstruct">New Reconstruction <Arrow diagonal /></Link>
       </aside>
     </div>}
