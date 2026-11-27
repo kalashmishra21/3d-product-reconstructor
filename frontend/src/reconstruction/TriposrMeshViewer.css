@@ -1,14 +1,33 @@
-.triposr-viewer {
-  width: 100%;
-  min-height: 420px;
-  overflow: hidden;
-  border: 1px solid rgba(48, 61, 48, .16);
-  border-radius: 18px;
-  background: #f2efe7;
+.triposr-viewer-shell { display: grid; gap: .55rem; min-width: 0; }
+.triposr-viewer-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .7rem; }
+.triposr-control-group,
+.triposr-viewer-actions,
+.triposr-camera-presets { display: flex; align-items: center; flex-wrap: wrap; gap: .32rem; }
+.triposr-toolbar-label { margin-right: .22rem; color: var(--color-text-secondary); font: 700 .61rem var(--font-mono); letter-spacing: .1em; }
+.triposr-control-group button,
+.triposr-viewer-actions button,
+.triposr-camera-presets button { min-height: 32px; padding: .35rem .56rem; font-size: .68rem; }
+.triposr-control-group button.is-active,
+.triposr-camera-presets button.is-active { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-on-accent); }
+.triposr-viewer-actions button { min-width: 32px; padding-inline: .48rem; }
+.triposr-camera-presets { gap: .26rem; }
+.triposr-camera-presets .triposr-toolbar-label { margin-right: .34rem; }
+.triposr-viewer { position: relative; width: 100%; height: clamp(360px, 45vw, 560px); min-height: 340px; overflow: hidden; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-background); }
+.triposr-viewer canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.triposr-viewer:fullscreen { display: grid; width: 100vw; height: 100vh; border: 0; border-radius: 0; }
+.triposr-viewer:fullscreen canvas { min-height: 0; }
+.triposr-viewer-fallback { padding: 1.25rem; color: var(--color-text-secondary); text-align: center; }
+.triposr-viewer-caption { display: flex; justify-content: space-between; gap: .7rem; color: var(--color-text-secondary); font: 650 .58rem var(--font-mono); letter-spacing: .06em; }
+.triposr-viewer-caption span:first-child { color: var(--color-accent); }
+.triposr-viewer-shell button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+@media (max-width: 720px) {
+  .triposr-viewer-toolbar { align-items: flex-start; flex-direction: column; }
+  .triposr-viewer { height: 390px; min-height: 320px; }
+  .triposr-viewer-caption { flex-direction: column; }
 }
-
-.triposr-viewer canvas { display: block; width: 100%; height: 100%; min-height: 420px; }
-
-@media (max-width: 640px) {
-  .triposr-viewer, .triposr-viewer canvas { min-height: 320px; }
+@media (max-width: 440px) {
+  .triposr-camera-presets { gap: .22rem; }
+  .triposr-control-group button,
+  .triposr-camera-presets button { min-height: 30px; padding-inline: .45rem; font-size: .63rem; }
 }

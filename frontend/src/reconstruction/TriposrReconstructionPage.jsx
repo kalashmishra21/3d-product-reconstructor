@@ -1,39 +1,48 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Arrow } from '../components/Icons'
 import { useAuth } from '../auth/AuthProvider'
+import { getHealth } from '../lib/api.js'
+import { preflightErrorMessage, preflightImage } from '../lib/preflight.js'
 import { getTriposrReadiness, inferTriposrImage, triposrErrorMessage } from '../lib/triposr.js'
 import { saveTriposrOutput } from '../lib/triposrHistory.js'
-import { inspectImageFile } from './image.js'
+import { inspectImageFile, formatBytes } from './image.js'
 import { TriposrMeshViewer } from './TriposrMeshViewer.jsx'
 import { downloadTriposrAsset, exportTriposrMesh } from './triposrExport.js'
 import './calibratedReconstruction.css'
 import './TriposrMeshViewer.css'
 
+const PREFLIGHT_STEPS = [
+  ['image', 'Image format, size, and decoding'],
+  ['auth', 'Signed-in session'],
+  ['api', 'Application API'],
+  ['engine', 'Reconstruction service'],
+]
+
 export function TriposrReconstructionPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const inputRef = useRef(null)
   const [selected, setSelected] = useState(null)
   const [previewUrl, setPreviewUrl] = useState('')
   const [prediction, setPrediction] = useState(null)
-  const [service, setService] = useState('checking')
-  const [busy, setBusy] = useState(false)
+  const [preflight, setPreflight] = useState(null)
+  const [activity, setActivity] = useState('idle')
+  const [dragging, setDragging] = useState(false)
   const [error, setError] = useState('')
   const [saveMessage, setSaveMessage] = useState('')
-  const [viewerVersion, setViewerVersion] = useState(0)
+  const [activeTab, setActiveTab] = useState('result')
+  const busy = activity !== 'idle'
 
-  const refreshReadiness = useCallback(async () => {
-    setService('checking')
-    const result = await getTriposrReadiness()
-    setService(result.ready ? 'ready' : 'unavailable')
-  }, [])
-
-  useEffect(() => { void refreshReadiness() }, [refreshReadiness])
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl) }, [previewUrl])
 
   async function chooseFile(file) {
-    setError(''); setSaveMessage(''); setPrediction(null); setSelected(null)
     if (!file) return
+    setError('')
+    setSaveMessage('')
+    setPrediction(null)
+    setPreflight(null)
+    setActiveTab('input')
     try {
       const inspected = await inspectImageFile(file)
       setSelected(inspected)
@@ -42,6 +51,7 @@ export function TriposrReconstructionPage() {
         return URL.createObjectURL(file)
       })
     } catch (reason) {
+      setSelected(null)
       setPreviewUrl((current) => {
         if (current) URL.revokeObjectURL(current)
         return ''
@@ -50,15 +60,87 @@ export function TriposrReconstructionPage() {
     }
   }
 
+  function removeImage() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setSelected(null)
+    setPreviewUrl('')
+    setPrediction(null)
+    setPreflight(null)
+    setError('')
+    setSaveMessage('')
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  async function runPreflight() {
+    if (!selected || busy) return
+    setActivity('preflight')
+    setError('')
+    setPrediction(null)
+    setPreflight({ checks: { image: 'passed', auth: user ? 'checking' : 'failed', api: 'checking', engine: 'checking' }, passed: false })
+    const checks = { image: 'passed', auth: user ? 'passed' : 'failed', api: 'checking', engine: 'checking' }
+    try {
+      if (!user) {
+        checks.api = 'not-run'
+        checks.engine = 'not-run'
+        throw Object.assign(new Error('Sign in to check readiness and reconstruct an image.'), { code: 'AUTH_REQUIRED' })
+      }
+
+      try {
+        await getHealth()
+        checks.api = 'passed'
+      } catch {
+        checks.api = 'failed'
+        checks.engine = 'not-run'
+        throw Object.assign(new Error('The application API could not be reached. Check the service connection and try again.'), { code: 'API_UNAVAILABLE' })
+      }
+
+      try {
+        const response = await preflightImage(selected.file)
+        checks.image = response.status === 'ready' ? 'passed' : 'failed'
+      } catch (reason) {
+        if (reason?.code === 'AUTH_REQUIRED' || reason?.response?.status === 401) checks.auth = 'failed'
+        else checks.image = 'failed'
+        checks.engine = 'not-run'
+        throw reason
+      }
+
+      const readiness = await getTriposrReadiness()
+      if (readiness.reason === 'authentication_required') checks.auth = 'failed'
+      checks.engine = readiness.ready ? 'passed' : 'failed'
+      if (!readiness.ready) {
+        const unavailable = new Error(readiness.reason === 'authentication_required'
+          ? 'Sign in again to check model readiness.'
+          : 'The reconstruction service is unavailable right now. Try again later.')
+        unavailable.code = readiness.reason === 'authentication_required' ? 'AUTH_REQUIRED' : 'SERVICE_UNAVAILABLE'
+        throw unavailable
+      }
+
+      setPreflight({ checks, passed: true })
+    } catch (reason) {
+      setPreflight({ checks, passed: false })
+      setError(reason?.code === 'API_UNAVAILABLE' || reason?.code === 'AUTH_REQUIRED' || reason?.code === 'SERVICE_UNAVAILABLE'
+        ? reason.message
+        : preflightErrorMessage(reason))
+    } finally {
+      setActivity('idle')
+    }
+  }
+
   async function reconstruct() {
-    if (!selected || service !== 'ready' || busy) return
-    setBusy(true); setError(''); setSaveMessage(''); setPrediction(null)
+    if (!selected || !preflight?.passed || busy) return
+    setActivity('inference')
+    setError('')
+    setSaveMessage('')
+    setPrediction(null)
+    setActiveTab('result')
     try {
       setPrediction(await inferTriposrImage(selected.file))
     } catch (reason) {
       setError(triposrErrorMessage(reason))
-      if (reason?.response?.status === 503) setService('unavailable')
-    } finally { setBusy(false) }
+      if (reason?.response?.status === 503) {
+        setPreflight((current) => current ? { ...current, passed: false, checks: { ...current.checks, engine: 'failed' } } : current)
+      }
+    } finally { setActivity('idle') }
   }
 
   async function download(format) {
@@ -68,64 +150,100 @@ export function TriposrReconstructionPage() {
 
   async function saveHistory() {
     if (!selected || !prediction || !user?.id || busy) return
-    setBusy(true); setError(''); setSaveMessage('Saving privately to your history…')
+    setActivity('saving')
+    setError('')
+    setSaveMessage('Saving to your private history…')
     try {
       const row = await saveTriposrOutput({ userId: user.id, file: selected.file,
         width: selected.width, height: selected.height, prediction })
       navigate(`/reconstructions/${encodeURIComponent(row.id)}`)
     } catch {
-      setSaveMessage(''); setError('The mesh was generated, but private history could not be saved. You can still download it.')
-    } finally { setBusy(false) }
+      setSaveMessage('')
+      setError('The model is ready, but it could not be saved. You can still download it.')
+    } finally { setActivity('idle') }
   }
 
-  const statusText = service === 'checking' ? 'Checking the TripoSR service…' :
-    service === 'ready' ? 'TripoSR is ready for single-image reconstruction.' :
-      'TripoSR is unavailable. Your image remains in this browser until you start a request.'
+  const canReconstruct = Boolean(selected && preflight?.passed && !busy)
 
   return <main className="calibrated-reconstruction" id="main-content">
     <header className="reconstruction-heading">
-      <p className="calibrated-eyebrow">IMAGE RECONSTRUCTION</p>
-      <h1>Reconstruct from one photo.</h1>
-      <p>Upload a product photograph. TripoSR estimates a colored 3D mesh and does not require camera JSON.</p>
+      <p className="calibrated-eyebrow">PIXEL3MESH WORKSPACE</p>
+      <h1>Explore a product in 3D.</h1>
+      <p>Choose one product photo, confirm it is ready, then create an interactive 3D estimate.</p>
     </header>
-    <div className="reconstruction-layout">
-      <section className="reconstruction-upload-card" aria-labelledby="triposr-upload-title">
-        <div><p className="calibrated-eyebrow">YOUR INPUT</p><h2 id="triposr-upload-title">Product photograph</h2>
-          <p className="reconstruction-copy">JPEG, PNG, or WebP up to 10 MB. Background removal runs automatically after you request a reconstruction.</p></div>
-        <label className="reconstruction-file-control" htmlFor="triposr-image"><span>{selected ? 'Choose another image' : 'Choose image'}</span>
-          <input id="triposr-image" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { void chooseFile(event.target.files?.[0]) }} />
-        </label>
+
+    <div className="reconstruction-layout triposr-workspace">
+      <section className="reconstruction-upload-card triposr-input-panel" aria-labelledby="triposr-upload-title">
+        <div className="triposr-panel-heading"><div><p className="calibrated-eyebrow">01 · INPUT</p><h2 id="triposr-upload-title">Product photo</h2></div>
+          {selected && <span className="triposr-file-size">{formatBytes(selected.file.size)}</span>}</div>
+        <p className="reconstruction-copy">JPEG, PNG, or WebP · up to 10 MB · automatic image preparation</p>
+
+        {selected ? <div className="triposr-selected-file">
+          <div className="triposr-preview-frame"><img src={previewUrl} alt="Selected product photograph" className="reconstruction-preview" /></div>
+          <div className="triposr-image-details"><strong>{selected.file.name}</strong><span>{selected.width} × {selected.height} px · {selected.format}</span></div>
+          <div className="triposr-image-actions">
+            <button className="triposr-secondary-button" type="button" onClick={() => inputRef.current?.click()}>Replace image</button>
+            <button className="triposr-text-button" type="button" onClick={removeImage}>Remove</button>
+          </div>
+        </div> : <label className={`triposr-dropzone ${dragging ? 'is-dragging' : ''}`} htmlFor="triposr-image"
+          onDragEnter={(event) => { event.preventDefault(); setDragging(true) }}
+          onDragOver={(event) => event.preventDefault()}
+          onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false) }}
+          onDrop={(event) => { event.preventDefault(); setDragging(false); void chooseFile(event.dataTransfer.files?.[0]) }}>
+          <input ref={inputRef} id="triposr-image" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { void chooseFile(event.target.files?.[0]); event.target.value = '' }} />
+          <span className="triposr-upload-mark" aria-hidden="true">↑</span>
+          <strong>Drop a product photo here</strong>
+          <span>or <span className="triposr-browse-link">browse files</span></span>
+          <small>JPEG · PNG · WebP · 10 MB maximum</small>
+        </label>}
+
         {error && <p className="reconstruction-error" role="alert">{error}</p>}
-        {selected && <div className="reconstruction-preview-wrap"><img src={previewUrl} alt="Selected product photograph" className="reconstruction-preview" />
-          <p>{selected.width} × {selected.height} pixels · {selected.format}</p></div>}
-        <div className={'reconstruction-service-state is-' + service} role="status" aria-live="polite"><span className="reconstruction-service-indicator" aria-hidden="true" /><p>{statusText}</p></div>
-        <button className="reconstruction-submit" type="button" disabled={!selected || service !== 'ready' || busy} onClick={() => { void reconstruct() }}>
-          {busy && !prediction ? 'Reconstructing…' : 'Reconstruct image'}
+
+        <div className="triposr-preflight-block">
+          <div className="triposr-step-label"><span>02</span><strong>Readiness check</strong></div>
+          <p className="reconstruction-copy">Checks this image, your sign-in, the API, and model availability. It does not generate a mesh.</p>
+          <button className="triposr-secondary-button triposr-preflight-button" type="button" disabled={!selected || busy} onClick={() => { void runPreflight() }}>
+            {busy && !prediction ? 'Checking readiness…' : 'Run preflight'}
+          </button>
+          {preflight && <div className={`triposr-checklist ${preflight.passed ? 'is-passed' : 'is-incomplete'}`} aria-live="polite" aria-label="Preflight results">
+            {PREFLIGHT_STEPS.map(([key, label]) => <div className="triposr-check-row" key={key}>
+              <span className={`triposr-check-icon is-${preflight.checks[key]}`} aria-hidden="true">{preflight.checks[key] === 'passed' ? '✓' : preflight.checks[key] === 'failed' ? '!' : '·'}</span>
+              <span>{label}</span><span className="triposr-check-state">{preflight.checks[key] === 'passed' ? 'Ready' : preflight.checks[key] === 'failed' ? 'Not ready' : preflight.checks[key] === 'not-run' ? 'Not checked' : 'Checking'}</span>
+            </div>)}
+          </div>}
+        </div>
+
+        <div className="triposr-step-label triposr-reconstruct-label"><span>03</span><strong>Reconstruct</strong></div>
+        <button className="reconstruction-submit" type="button" disabled={!canReconstruct} onClick={() => { void reconstruct() }}>
+          {activity === 'inference' ? 'Creating your 3D model…' : activity === 'saving' ? 'Saving model…' : 'Generate 3D model'}
         </button>
-        <button className="reconstruction-retry" type="button" onClick={() => { void refreshReadiness() }} disabled={service === 'checking' || busy}>
-          {service === 'checking' ? 'Checking…' : 'Check service again'}
-        </button>
+        <p className="triposr-action-note">A new authenticated reconstruction is created from the selected photo.</p>
       </section>
 
-      <section className="reconstruction-output-card" aria-labelledby="triposr-result-title">
-        <p className="calibrated-eyebrow">PREDICTED MESH</p>
-        <h2 id="triposr-result-title">{prediction ? 'TripoSR reconstruction' : busy ? 'Creating your mesh…' : 'Your result will appear here'}</h2>
-        {prediction ? <>
-          <TriposrMeshViewer key={viewerVersion} prediction={prediction} />
-          <p className="reconstruction-copy">{prediction.vertices_count.toLocaleString()} vertices · {prediction.faces_count.toLocaleString()} faces · {Math.round(prediction.latency_ms).toLocaleString()} ms inference</p>
+      <section className="reconstruction-output-card triposr-result-panel" aria-labelledby="triposr-result-title">
+        <div className="triposr-panel-heading"><div><p className="calibrated-eyebrow">04 · INSPECT</p><h2 id="triposr-result-title">3D reconstruction</h2></div>
+          {prediction && <span className="triposr-result-ready">MODEL READY</span>}</div>
+        <div className="triposr-tabs" role="tablist" aria-label="Workspace view">
+          <button type="button" role="tab" aria-selected={activeTab === 'result'} className={activeTab === 'result' ? 'is-active' : ''} onClick={() => setActiveTab('result')}>Result</button>
+          <button type="button" role="tab" aria-selected={activeTab === 'input'} className={activeTab === 'input' ? 'is-active' : ''} onClick={() => setActiveTab('input')} disabled={!selected}>Input</button>
+        </div>
+
+        {activeTab === 'input' && selected ? <div className="triposr-input-tab"><img src={previewUrl} alt="Selected product input" /><div><strong>{selected.file.name}</strong><span>{selected.width} × {selected.height} px</span></div></div> : prediction ? <>
+          <TriposrMeshViewer prediction={prediction} />
+          <div className="triposr-mesh-meta"><span>{prediction.vertices_count.toLocaleString()} vertices</span><i aria-hidden="true" /><span>{prediction.faces_count.toLocaleString()} faces</span><i aria-hidden="true" /><span>{Math.round(prediction.latency_ms).toLocaleString()} ms</span></div>
           <div className="triposr-result-actions">
-            <button type="button" className="reconstruction-retry" onClick={() => setViewerVersion((value) => value + 1)}>Reset view</button>
-            <button type="button" className="reconstruction-retry" onClick={() => { void download('obj') }}>Download OBJ</button>
-            <button type="button" className="reconstruction-retry" onClick={() => { void download('glb') }}>Download GLB</button>
-            <button type="button" className="reconstruction-submit" disabled={busy} onClick={() => { void saveHistory() }}>Save to history</button>
+            <button type="button" className="triposr-secondary-button" onClick={() => { void download('obj') }}>Download OBJ</button>
+            <button type="button" className="triposr-secondary-button" onClick={() => { void download('glb') }}>Download GLB</button>
+            <button type="button" className="reconstruction-submit triposr-save-button" disabled={busy} onClick={() => { void saveHistory() }}>Save to history</button>
           </div>
-          {saveMessage && <p role="status">{saveMessage}</p>}
-          <p className="reconstruction-copy">Generated with official pretrained TripoSR weights. A single image cannot reveal unseen object surfaces reliably.</p>
-        </> : <div className="reconstruction-output-empty">
-          <div className="reconstruction-output-mark" aria-hidden="true"><span /><span /><span /></div>
-          <p>The result will come from a new authenticated inference request. No saved gallery or ground-truth mesh is used as a substitute.</p>
+          {saveMessage && <p className="triposr-save-message" role="status">{saveMessage}</p>}
+        </> : <div className={`reconstruction-output-empty ${busy ? 'is-processing' : ''}`}>
+          {activity === 'inference' ? <div className="triposr-processing-mark" aria-hidden="true"><span /><span /><span /></div> : <div className="reconstruction-output-mark" aria-hidden="true"><span /><span /><span /></div>}
+          <strong>{activity === 'inference' ? 'Preparing your 3D model' : 'Your result appears here'}</strong>
+          <p>{activity === 'inference' ? 'The image is being processed and its geometry is generated.' : 'Add a photo, run preflight, and generate a new reconstruction to inspect it here.'}</p>
+          {!prediction && <Link className="reconstruction-history-link" to="/history">View saved models <Arrow diagonal /></Link>}
         </div>}
-        <Link className="reconstruction-history-link" to="/history">Open saved reconstruction history <Arrow diagonal /></Link>
+        {prediction && <p className="triposr-result-note">Single-image estimates may not show surfaces hidden from the camera.</p>}
       </section>
     </div>
   </main>
