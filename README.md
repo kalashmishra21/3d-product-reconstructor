@@ -21,6 +21,18 @@ Choose a product image, check that it is ready, and request a new 3D reconstruct
 - Supabase sign-in and owner-scoped reconstruction history with private artifacts.
 - Ivory Atelier and Forest Studio themes.
 
+## Application screenshots
+
+The following captures come from the authenticated local application. The reconstruction image shows a newly generated Speaker mesh from a live inference request. The source photograph is by Jan Hagelskamp, used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) via [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Bluetooth-Lautsprecher.jpg).
+
+### Workspace overview
+
+![Pixel3Mesh workspace in Ivory Atelier](assets/readme/dashboard.jpg)
+
+### Live reconstruction
+
+![Uploaded Speaker photograph and genuine generated mesh in the reconstruction workspace](assets/readme/reconstruction.jpg)
+
 ## Technology
 
 React, Vite, Three.js, FastAPI, PyTorch, Supabase Auth and Storage, Cloudflare Pages, and Modal deployment configuration.
