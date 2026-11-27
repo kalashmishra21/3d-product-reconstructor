@@ -16,6 +16,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+model = [
+    "numpy>=1.26,<3",
+    "torch>=2.2,<3",
+    "torchvision>=0.17,<1",
+]
 dev = [
     "httpx==0.28.1",
     "pytest==8.3.5",

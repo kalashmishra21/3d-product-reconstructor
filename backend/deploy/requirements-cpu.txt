@@ -1,0 +1,8 @@
+fastapi==0.141.1
+Pillow==12.3.0
+PyJWT[crypto]==2.15.1
+python-multipart==0.0.32
+uvicorn==0.54.0
+numpy==2.4.6
+torch==2.15.0+cpu
+torchvision==0.29.2+cpu

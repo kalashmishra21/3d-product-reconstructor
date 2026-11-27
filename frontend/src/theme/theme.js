@@ -1,10 +1,10 @@
 export const THEME_KEY = 'reconstruct.theme'
-export function resolveTheme(value, prefersDark = true) {
-  return value === 'forest' || value === 'ivory' ? value : prefersDark ? 'forest' : 'ivory'
+export function resolveTheme(value) {
+  return value === 'forest' || value === 'ivory' ? value : 'ivory'
 }
-export function readTheme(storage, prefersDark) {
-  try { return resolveTheme(storage.getItem(THEME_KEY), prefersDark) }
-  catch { return resolveTheme(null, prefersDark) }
+export function readTheme(storage) {
+  try { return resolveTheme(storage.getItem(THEME_KEY)) }
+  catch { return resolveTheme(null) }
 }
 export function storeTheme(storage, value) {
   if (value !== 'forest' && value !== 'ivory') return

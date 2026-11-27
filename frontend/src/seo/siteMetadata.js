@@ -4,7 +4,7 @@ export const SOFTWARE_APPLICATION_JSON_LD = Object.freeze({
   name: 'Reconstruct',
   applicationCategory: 'DesignApplication',
   operatingSystem: 'Web browser',
-  description: 'A browser-based workspace exploring 3D object reconstruction from a single RGB image, inspecting Pixel2Mesh geometry, and exporting OBJ or GLB assets.',
+  description: 'A browser-based Pixel3Mesh workspace reconstructing a single RGB image with camera calibration into 2,048-point predictions and a visible-surface OBJ.',
 })
 
 export function routeRobotsContent(pathname) {

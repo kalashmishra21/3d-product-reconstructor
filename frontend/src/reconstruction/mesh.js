@@ -13,7 +13,10 @@ export function deriveObjectName(filename = '') {
   return words.replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
+import { validReconstruction } from './geometryContract.js'
+
 export function validateMeshResponse(data) {
+  if (data?.schema_version === 2) return validReconstruction(data) ? '' : 'MESH DATA INVALID'
   if (
     !data || data.status !== 'complete' || data.model !== 'Pixel2Mesh' || data.stage !== 3 ||
     data.vertices_count !== 2466 || data.faces_count !== 4928 ||

@@ -30,7 +30,7 @@ function rawObject(mesh) {
     side: DoubleSide,
   })
   const object = new Mesh(geometry, material)
-  object.name = 'Pixel2Mesh Stage 3'
+  object.name = 'Predicted visible surface'
   object.updateMatrixWorld(true)
   return object
 }
@@ -51,7 +51,7 @@ export async function serializeStage3(mesh, format, { objectName = '', sourceFil
     if (!blob.size) throw new Error('Empty mesh export')
     return {
       blob,
-      filename: `${exportStem(objectName, sourceFilename)}-stage3.${format}`,
+      filename: `${exportStem(objectName, sourceFilename)}-predicted-visible-surface.${format}`,
       sizeBytes: blob.size,
       serializationMs: performance.now() - started,
     }

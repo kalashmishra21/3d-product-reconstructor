@@ -76,11 +76,11 @@ export default function ResultDetail() {
     const blob = await downloadPrivate('reconstruction-artifacts', path)
     if (!blob?.size) throw new Error('Saved export empty')
     const { exportStem } = await import('../reconstruction/export.js')
-    return { blob, filename: `${exportStem(objectName, sourceFilename)}-stage3.${format}`, sizeBytes: blob.size }
+    return { blob, filename: `${exportStem(objectName, sourceFilename)}-predicted-mesh.${format}`, sizeBytes: blob.size }
   }
 
   return <section className="workspace-page result-detail-page" aria-labelledby="result-detail-title">
-    <div className="workspace-page-heading"><div><p className="dash-kicker">SAVED RECONSTRUCTION</p><h1 id="result-detail-title">{row?.object_name || (loading ? 'Opening your result.' : 'Reconstruction result')}</h1><p>Private source and real Stage-3 geometry, saved to your workspace.</p></div><Link className="dash-text-link" to="/history">Back to history <Arrow /></Link></div>
+    <div className="workspace-page-heading"><div><p className="dash-kicker">SAVED RECONSTRUCTION</p><h1 id="result-detail-title">{row?.object_name || (loading ? 'Opening your result.' : 'Reconstruction result')}</h1><p>Private source image and saved predicted geometry.</p></div><Link className="dash-text-link" to="/history">Back to history <Arrow /></Link></div>
 
     {loading && <p className="result-detail-state" role="status">Opening your saved reconstruction…</p>}
     {!loading && error && <div className="result-detail-state" role="alert"><p>This result could not be opened. Check the connection and try again.</p><button type="button" className="button secondary" onClick={() => setRetryVersion((value) => value + 1)}>Retry loading</button><Link className="dash-text-link" to="/history">Back to History <Arrow /></Link></div>}
@@ -88,7 +88,7 @@ export default function ResultDetail() {
 
     {!loading && !error && row && <div className="result-detail-grid">
       <section className="recon-view-panel is-result" aria-label="Saved result inspection">
-        <div className="recon-view-header"><div><p className="recon-eyebrow">{view === 'mesh' ? 'SAVED MODEL OUTPUT / 003' : 'SAVED SOURCE IMAGE / 001'}</p><h2>{view === 'mesh' ? 'Real Stage-3 mesh' : 'Input inspection'}</h2></div><span className="recon-live-label">{statusLabel[row.status] || 'SAVED'}</span></div>
+        <div className="recon-view-header"><div><p className="recon-eyebrow">{view === 'mesh' ? 'SAVED PREDICTED SURFACE' : 'SAVED SOURCE IMAGE / 001'}</p><h2>{view === 'mesh' ? 'Saved predicted mesh' : 'Input inspection'}</h2></div><span className="recon-live-label">{statusLabel[row.status] || 'SAVED'}</span></div>
         <div className="result-view-tabs" role="tablist" aria-label="Inspect saved result or source">
           <button type="button" role="tab" data-view="mesh" aria-selected={view === 'mesh'} tabIndex={view === 'mesh' ? 0 : -1} onClick={() => setView('mesh')} onKeyDown={onTabKey}>RESULT</button>
           <button type="button" role="tab" data-view="input" aria-selected={view === 'input'} tabIndex={view === 'input' ? 0 : -1} onClick={() => setView('input')} onKeyDown={onTabKey}>INPUT</button>
@@ -101,7 +101,7 @@ export default function ResultDetail() {
         <div className="recon-view-foot"><span>{view === 'mesh' ? 'PERSISTED RAW MODEL GEOMETRY' : 'ORIGINAL PRIVATE SOURCE IMAGE'}</span><span>{hasResult && view === 'mesh' ? `${mesh.vertices_count.toLocaleString()} VERTICES / ${mesh.faces_count.toLocaleString()} FACES` : row.source_filename}</span></div>
       </section>
 
-      <aside className="result-detail-sidebar"><div className="result-detail-meta"><p className="dash-kicker">RECONSTRUCTION RECORD</p><h2>{row.object_name || 'Untitled reconstruction'}</h2><p>{row.source_filename}</p><dl><div><dt>Status</dt><dd>{statusLabel[row.status] || row.status}</dd></div><div><dt>Model</dt><dd>{row.model_name || '—'}</dd></div><div><dt>Stage</dt><dd>{row.stage ? String(row.stage).padStart(2, '0') : '—'}</dd></div><div><dt>Vertices</dt><dd>{row.vertices_count?.toLocaleString() || '—'}</dd></div><div><dt>Faces</dt><dd>{row.faces_count?.toLocaleString() || '—'}</dd></div><div><dt>Inference</dt><dd>{row.inference_ms != null ? formatMilliseconds(Number(row.inference_ms)) : '—'}</dd></div></dl></div>
+      <aside className="result-detail-sidebar"><div className="result-detail-meta"><p className="dash-kicker">RECONSTRUCTION RECORD</p><h2>{row.object_name || 'Untitled reconstruction'}</h2><p>{row.source_filename}</p><dl><div><dt>Status</dt><dd>{statusLabel[row.status] || row.status}</dd></div><div><dt>Model</dt><dd>{row.model_name || '—'}</dd></div><div><dt>Vertices</dt><dd>{row.vertices_count?.toLocaleString() || '—'}</dd></div><div><dt>Faces</dt><dd>{row.faces_count?.toLocaleString() || '—'}</dd></div><div><dt>Inference</dt><dd>{row.inference_ms != null ? formatMilliseconds(Number(row.inference_ms)) : '—'}</dd></div></dl></div>
         {hasResult && row.obj_path && row.glb_path && <ExportPanel mesh={mesh} objectName={row.object_name || ''} sourceFilename={row.source_filename} prepareExport={prepareStoredExport} />}
         <Link className="dash-text-link" to="/reconstruct">New Reconstruction <Arrow diagonal /></Link>
       </aside>

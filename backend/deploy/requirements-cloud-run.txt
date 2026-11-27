@@ -1,0 +1,2 @@
+-r requirements-cpu.txt
+google-cloud-storage==3.17.2

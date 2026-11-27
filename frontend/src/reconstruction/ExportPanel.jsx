@@ -39,12 +39,12 @@ export function ExportPanel({ mesh, objectName, sourceFilename, prepareExport })
   return <section className="recon-export" aria-labelledby="recon-export-title">
     <div className="recon-export-heading">
       <div><p className="recon-eyebrow">04 / ASSET DELIVERY</p><h3 id="recon-export-title">Export mesh</h3></div>
-      <span>{valid ? 'RAW STAGE-3 GEOMETRY' : 'EXPORT UNAVAILABLE'}</span>
+      <span>{valid ? 'PREDICTED GEOMETRY' : 'EXPORT UNAVAILABLE'}</span>
     </div>
     {!valid && <p className="recon-inline-error" role="alert">EXPORT UNAVAILABLE — Mesh data failed validation.</p>}
     <div className="recon-export-actions">
       <button type="button" disabled={!valid || Boolean(busy)} onClick={() => download('obj')}>
-        <span><strong>Download OBJ</strong><small>Wavefront OBJ · Raw Stage-3 geometry</small></span>
+        <span><strong>Download OBJ</strong><small>Wavefront OBJ · Predicted mesh geometry</small></span>
         <span className="recon-export-meta">{sizes.obj ? formatBytes(sizes.obj) : '.OBJ'} ↗</span>
       </button>
       <button type="button" disabled={!valid || Boolean(busy)} onClick={() => download('glb')}>
@@ -52,6 +52,6 @@ export function ExportPanel({ mesh, objectName, sourceFilename, prepareExport })
         <span className="recon-export-meta">{sizes.glb ? formatBytes(sizes.glb) : '.GLB'} ↗</span>
       </button>
     </div>
-    <p className="recon-export-status" role="status" aria-live="polite">{message || (prepareExport ? 'Downloads use the saved raw Stage-3 assets. The model will not run again.' : 'Exports use the original model coordinates, independent of the viewer camera.')}</p>
+    <p className="recon-export-status" role="status" aria-live="polite">{message || (prepareExport ? 'Downloads use the saved prediction. Inference will not run again.' : 'Exports use the original model coordinates, independent of the viewer camera.')}</p>
   </section>
 }

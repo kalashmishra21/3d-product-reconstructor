@@ -2,12 +2,15 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { resolveTheme, readTheme, storeTheme, sceneThemes, THEME_KEY } from '../src/theme/theme.js'
 
-test('app theme validates preference, honors system fallback and tolerates blocked storage', () => {
+test('Ivory Atelier is the first-visit default and saved preferences remain honored', () => {
   assert.equal(resolveTheme('ivory', true), 'ivory')
   assert.equal(resolveTheme('forest', false), 'forest')
-  assert.equal(resolveTheme('unexpected', true), 'forest')
+  assert.equal(resolveTheme('unexpected', true), 'ivory')
+  assert.equal(resolveTheme(null, true), 'ivory')
   assert.equal(resolveTheme(null, false), 'ivory')
-  assert.equal(readTheme({ getItem() { throw Error('blocked') } }, true), 'forest')
+  assert.equal(readTheme({ getItem() { return null } }), 'ivory')
+  assert.equal(readTheme({ getItem() { return 'forest' } }), 'forest')
+  assert.equal(readTheme({ getItem() { throw Error('blocked') } }), 'ivory')
   assert.doesNotThrow(() => storeTheme({ setItem() { throw Error('blocked') } }, 'ivory'))
   const writes = []
   storeTheme({ setItem: (...args) => writes.push(args) }, 'ivory')
@@ -26,12 +29,12 @@ test('scene themes change presentation only and have distinct legible material p
 })
 
 // The pre-paint script is tested independently of React so a refresh cannot flash the other studio.
-test('pre-paint theme bootstrap handles saved choice, system fallback, and blocked storage', async () => {
+test('pre-paint theme bootstrap uses ivory for fresh sessions without flashing forest', async () => {
   const { readFile } = await import('node:fs/promises')
   const { runInNewContext } = await import('node:vm')
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
   const script = html.match(/<script>([\s\S]*?)<\/script>/)[1]
-  for (const [saved, system, blocked, expected] of [['forest', false, false, 'forest'], ['ivory', true, false, 'ivory'], [null, false, false, 'ivory'], ['bad', true, false, 'forest'], [null, false, true, 'ivory']]) {
+  for (const [saved, system, blocked, expected] of [['forest', false, false, 'forest'], ['ivory', true, false, 'ivory'], [null, true, false, 'ivory'], [null, false, false, 'ivory'], ['bad', true, false, 'ivory'], [null, false, true, 'ivory']]) {
     const root = { dataset: {}, style: {} }, meta = {}
     runInNewContext(script, { document: { documentElement: root, querySelector: () => meta }, localStorage: { getItem() { if (blocked) throw Error('blocked'); return saved } }, matchMedia: () => ({ matches: system }) })
     assert.equal(root.dataset.theme, expected)

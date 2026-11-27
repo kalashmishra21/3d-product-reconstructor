@@ -7,6 +7,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
 from fastapi.testclient import TestClient
+from fastapi import HTTPException
 from jwt.exceptions import PyJWKClientConnectionError
 
 from app import auth
@@ -54,6 +55,23 @@ def _me(token):
 
 def test_health_remains_public():
     assert TestClient(app).get("/api/v1/health").status_code == 200
+
+
+def test_loopback_http_issuer_requires_explicit_development_configuration(monkeypatch):
+    monkeypatch.setenv("SUPABASE_URL", "http://127.0.0.1:55521")
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setenv("SUPABASE_ALLOW_HTTP_LOOPBACK", "true")
+    assert auth._issuer() == "http://127.0.0.1:55521/auth/v1"
+
+
+@pytest.mark.parametrize("url", ["http://supabase.example.com", "http://127.0.0.1:55521"])
+def test_http_issuer_is_rejected_outside_explicit_local_development(monkeypatch, url):
+    monkeypatch.setenv("SUPABASE_URL", url)
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("SUPABASE_ALLOW_HTTP_LOOPBACK", "true")
+    with pytest.raises(HTTPException) as error:
+        auth._issuer()
+    assert error.value.status_code == 503
 
 
 @pytest.mark.parametrize("header", [None, "Basic abc", "Bearer", "Bearer a b"])

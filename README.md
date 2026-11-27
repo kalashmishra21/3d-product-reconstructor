@@ -1,86 +1,111 @@
-# Reconstruct
+# Pixel3Mesh
 
-Reconstruct is a browser-based research workspace for inspecting how a single RGB image is processed into a 3D mesh. It connects the trained Pixel2Mesh model to an authenticated React and Three.js application, with persisted reconstruction records and raw OBJ/GLB exports.
+Pixel3Mesh is a 3D reconstruction research project with a React, Vite and Three.js application, a FastAPI service, Supabase authentication, and private user history. The public frontend is [3d-product-reconstructor.pages.dev](https://3d-product-reconstructor.pages.dev/).
 
-The current checkpoint is an **integration baseline**. Some real predictions have very low geometric volume. The application shows and saves the model output as produced; reconstruction quality is still under review. The illustrative vessel on the public landing page is a design demo, not a prediction.
+## Current application status
 
-## Product
+- The frontend provides landing, sign-in/sign-up, workspace, Model Explorer, image selection, account and reconstruction-history pages.
+- `/reconstruct` accepts a single RGB image and previews it locally. It does not send or reconstruct that image while the inference engine is unavailable.
+- FastAPI runs independently of model artifacts. `/api/v1/health` reports API liveness; `/api/v1/readiness` reports model readiness. The current local service returns 503 for readiness and inference until a compatible engine is configured.
+- Supabase provides email/password and Google authentication, PostgreSQL reconstruction metadata, and private object storage. Existing history remains in the original user-owned `reconstructions` records. The additive variable-output migration is locally verified but has not been applied to hosted production.
+- The saved six-category gallery remains available at `/model-gallery`. It shows saved research predictions and is not live inference.
 
-| Forest Studio | Ivory Atelier |
-| --- | --- |
-| ![Dark Forest cinematic landing page with illustrative vessel](assets/readme/landing.jpg) | ![Light Ivory cinematic landing page with illustrative vessel](assets/readme/landing-ivory.jpg) |
+## Original Pixel2Mesh research architecture
 
-| Workspace overview | Sign in |
-| --- | --- |
-| ![Authenticated dashboard overview](assets/readme/dashboard.jpg) | ![Email and Google sign-in page](assets/readme/login.jpg) |
-
-| New reconstruction · source inspection | Persisted Stage-3 result · low-volume output shown honestly |
-| --- | --- |
-| ![New Reconstruction with the real source image and preflight](assets/readme/reconstruction.jpg) | ![Persisted real Stage-3 result with low-volume status and exports](assets/readme/result-viewer.jpg) |
-
-| Saved history | Model explorer |
-| --- | --- |
-| ![History of persisted reconstruction records](assets/readme/history.jpg) | ![Pixel2Mesh stages and measured evaluation metrics](assets/readme/model.jpg) |
-
-Screenshots show the real application. The landing vessel is explicitly illustrative; the Stage-3 result is real model output and may be low-volume.
-
-## Architecture and capabilities
+The Model Explorer presents the original research pipeline as a historical architecture visualization:
 
 ```text
-React + Three.js workspace
-  ├─ Supabase Auth (email/password and Google OAuth)
-  ├─ Supabase PostgreSQL + private Storage (profiles and reconstruction artifacts)
-  └─ FastAPI API → validated image → Pixel2Mesh worker → Stage-3 mesh
+RGB image
+  → VGG16 image features
+  → graph feature fusion
+  → coarse ellipsoid graph deformation
+  → mesh upsampling and refinement
+  → three graph-deformation stages
 ```
 
-- The authenticated preflight checks actual JPEG, PNG, and WebP image content, dimensions, and size before inference.
-- Pixel2Mesh runs in a persistent local worker environment behind FastAPI. The viewer supports Solid, Wireframe, Vertices, source-image inspection, orbit, camera presets, Fit, and Reset.
-- History and Result Detail reopen user-owned records from Supabase. Private source images and mesh artifacts use authenticated Storage access; mesh coordinates are not stored in PostgreSQL.
-- OBJ and GLB exports are generated from the same raw Stage-3 prediction. Display and camera transforms do not alter saved/exported coordinates, and exporting does not run inference again.
-- The landing includes an interactive, topology-inspired vessel demonstration. It is illustrative and is never substituted for inference output.
-- Forest and Ivory themes persist across public and authenticated pages. The workspace and viewer adapt to desktop and mobile layouts.
-- Public-page metadata, Open Graph fields, SoftwareApplication structured data, and private-route `noindex` behavior provide an SEO foundation. A production domain has not been selected, so no canonical URL or sitemap is published.
+The historical topology uses 156, 618 and 2,466 vertices across its three stages. This research visualization does not depict the currently active inference engine. The original source, ShapeNet loader, loss/configuration files, evaluation utilities, logs and local checkpoints remain under `Pixel2Mesh/` and `dataset_tools/`.
 
-## Model reference
+The selected custom six-category research bundle is preserved separately at `MyDrive/Pixel3Mesh_SixCategory_FINAL_20261126/` in the original Google Drive. Its checkpoint SHA-256 is `ea861cc8f2120d80a8509b2581949445ca8aa73e1d274ba2882ed37e770f3500`. It is not loaded by the current API-only service.
 
-Pixel2Mesh takes one RGB image, extracts image features with VGG16, then deforms a graph through three mesh stages.
+## Authentication and history
 
-| Stage | Vertices | Faces |
-| --- | ---: | ---: |
-| 1 | 156 | 308 |
-| 2 | 618 | 1,232 |
-| 3 | 2,466 | 4,928 |
+The frontend uses Supabase Auth for email/password, Google OAuth, password recovery and persistent sessions. Redirects are formed from the current site origin; add the corresponding `/auth/callback` URL to the Supabase redirect allowlist for local or production use. Never put a Supabase service-role key in frontend configuration.
 
-Recorded test-set metrics are Chamfer Distance **0.037181**, F1 @ τ **0.000640**, and F1 @ 2τ **0.001722**. These aggregate measurements are not accuracy percentages and do not predict the quality of an individual image. The current integration checkpoint can produce collapsed or low-volume geometry. Future model-quality recovery and deployment are separate work; no quality improvement or deployed site is claimed here.
+Reconstruction records and artifacts are owner-scoped. Existing history uses the deployed `reconstructions` schema and private storage paths. `supabase/migrations/20261126170000_variable_geometry_model_outputs.sql` adds versioned records for variable-size geometry without rewriting historical rows. It has passed local RLS tests, but it must not be applied to the hosted project without explicit approval.
 
-## Local development
+## Local setup
 
-Use the existing backend virtual environment, Pixel2Mesh worker environment, and local checkpoint. Keep local environment files out of Git. The API starter reads only the public `SUPABASE_URL` from ignored `backend/.env.local`; the frontend reads the Supabase project URL and publishable/anon key from ignored `frontend/.env.local`. Never put a service-role key in frontend configuration.
+Use Python 3.11 and Node.js 22.18 or later.
 
-Start FastAPI from the `backend/` directory in one PowerShell terminal:
+1. Install the API dependencies, which do not include PyTorch:
 
-```powershell
-Set-Location backend
-.\.venv\Scripts\python.exe -m app.local_start
-```
+   ```powershell
+   cd backend
+   py -3.11 -m venv .venv
+   .venv\Scripts\python.exe -m pip install -e ".[dev]"
+   cd ..
+   ```
 
-Start Vite in a second terminal:
+2. Set the API environment:
 
-```powershell
-Set-Location frontend
-npm.cmd ci
-npm.cmd run dev
-```
+   ```powershell
+   $env:SUPABASE_URL = "https://your-project.supabase.co"
+   $env:CORS_ORIGINS = "http://127.0.0.1:5173"
+   $env:RECONSTRUCTION_ENGINE = "disabled"
+   .\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+   ```
 
-Open <http://127.0.0.1:5173>. For the first local setup, install backend dependencies from `backend/pyproject.toml` in `backend/.venv`, and configure the separate Pixel2Mesh worker environment as documented by the model setup. FastAPI health and authentication paths do not import Torch; the model worker starts on the first inference request and is reused afterward.
+3. Copy `frontend/.env.example` to the ignored `frontend/.env.local` and set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_API_BASE_URL=http://127.0.0.1:8000`. The public anon key is intended for browser use; never use a service-role key here.
+
+4. In another terminal:
+
+   ```powershell
+   cd frontend
+   npm ci
+   npm run dev -- --host 127.0.0.1 --port 5173
+   ```
+
+5. Add `http://127.0.0.1:5173/auth/callback` to Supabase Auth's redirect allowlist, then visit `http://127.0.0.1:5173/login` and sign in normally.
+
+The reconstruction form accepts PNG, JPEG or WebP images up to 10 MB and displays a local preview. With the engine offline, no upload or prediction occurs. The current API contract returns 503 rather than substituting saved or ground-truth geometry.
 
 ## API
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/v1/health` | API process health; does not indicate model-worker readiness |
-| `GET` | `/api/v1/me` | Current identity from a verified Supabase JWT |
-| `POST` | `/api/v1/reconstructions/preflight` | Authenticated image decoding and validation |
-| `POST` | `/api/v1/reconstructions/infer` | Authenticated Pixel2Mesh Stage-3 inference |
+| GET | `/api/v1/health` | API liveness, independent of model state |
+| GET | `/api/v1/readiness` | Model availability; returns 503 while no compatible engine is configured |
+| GET | `/api/v1/me` | Identity from a verified Supabase JWT |
+| POST | `/api/v1/reconstructions/preflight` | Authenticated image validation |
+| POST | `/api/v1/reconstructions/infer` | Authenticated inference request; returns 503 while the engine is offline |
 
-The frontend calls the API through the Vite `/api` proxy during local development. A production host will need an equivalent same-origin API route/proxy and SPA fallback, along with configured authentication redirect origins. Production deployment is not part of the current project state.
+## Verification
+
+Verified locally in this worktree on 27 November 2026:
+
+- Backend: 71 tests passed.
+- Frontend: 97 tests passed.
+- Vite production build: passed.
+- API-only Docker image: built and started. Health returned 200, readiness returned 503, and Torch was not installed. Container memory at idle was about 45 MiB on this machine; that is not a cloud measurement.
+- Hosted Supabase Auth settings returned HTTP 200 with email and Google providers enabled. This does not verify an interactive login, OAuth redirect allowlist or private-history operation.
+- The isolated local Supabase suite previously passed 55 pgTAP assertions across four files. It was not rerun in this session; no Supabase CLI/configured local test stack was available.
+- No public Cloudflare or API deployment was performed.
+
+## CPU API deployment preparation
+
+`backend/deploy/Dockerfile-api-only` builds FastAPI from the core `backend/pyproject.toml` dependencies only. It excludes PyTorch and model files. `backend/deploy/cloud-run-api-only.yaml` configures a low-resource CPU service with scale-to-zero; `backend/deploy/README-api-only.md` contains build, test, deploy and disable instructions. This service is intentionally API-only until a model adapter is approved and attached.
+
+The existing public Cloudflare URL is still running its previously deployed build. Deploying these local changes requires Cloudflare account access. Deploying the API requires an authenticated Google Cloud project. Neither deployment has been executed.
+
+## Tests
+
+```powershell
+python -m pytest backend/tests -q
+cd frontend
+npm test
+npm run build
+```
+
+## Third-party attribution
+
+The original Pixel2Mesh research implementation and any included research assets retain their original licenses and citations. No external pretrained reconstruction weights are represented as Pixel3Mesh-trained weights in this application.

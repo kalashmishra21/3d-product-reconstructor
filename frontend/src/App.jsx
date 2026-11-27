@@ -15,7 +15,7 @@ const AuthCallbackRoute = authRoute('AuthCallbackRoute')
 const RequireAuth = authRoute('RequireAuth')
 const ProtectedWorkspace = authRoute('ProtectedWorkspace')
 const DashboardRoute = authRoute('DashboardRoute')
-const ReconstructionRoute = authRoute('ReconstructionRoute')
+const CalibratedReconstructionRoute = lazy(() => import('./reconstruction/CalibratedReconstructionPage.jsx').then((module) => ({ default: module.CalibratedReconstructionPage })))
 const HistoryRoute = authRoute('HistoryRoute')
 const ModelRoute = authRoute('ModelRoute')
 const ResultDetailRoute = authRoute('ResultDetailRoute')
@@ -61,7 +61,7 @@ export default function App() {
         <Route element={<RequireAuth />}>
           <Route element={<ProtectedWorkspace />}>
             <Route path="/dashboard" element={<DashboardRoute />} />
-            <Route path="/reconstruct" element={<ReconstructionRoute />} />
+            <Route path="/reconstruct" element={<Suspense fallback={<p role="status">Opening reconstruction…</p>}><CalibratedReconstructionRoute /></Suspense>} />
             <Route path="/history" element={<HistoryRoute />} />
             <Route path="/model" element={<ModelRoute />} />
             <Route path="/profile" element={<Navigate to="/dashboard" replace />} />

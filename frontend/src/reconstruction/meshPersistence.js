@@ -5,7 +5,9 @@ import { validateMeshResponse } from './mesh.js'
 export async function serializeArtifactSet(mesh, { objectName = '', sourceFilename = '' } = {}) {
   if (validateMeshResponse(mesh)) throw new Error('MESH DATA INVALID')
   const envelope = {
-    schema_version: 1,
+    schema_version: mesh.schema_version === 2 ? 2 : 1,
+    ...(mesh.schema_version === 2 ? { model_version: mesh.model_version,
+      output_type: mesh.output_type, global_points: mesh.global_points } : {}),
     status: 'complete',
     model: mesh.model,
     stage: mesh.stage,
@@ -29,7 +31,8 @@ export async function parseStage3Artifact(blob) {
   let parsed
   try { parsed = JSON.parse(await blob.text()) }
   catch { throw new Error('Invalid mesh artifact') }
-  if (parsed?.schema_version !== 1) throw new Error('Unsupported mesh artifact version')
+  if (![1, 2].includes(parsed?.schema_version)) throw new Error('Unsupported mesh artifact version')
+  if (parsed.schema_version === 2 && parsed.model !== 'Pixel3Mesh') throw new Error('Unsupported mesh artifact model')
   if (validateMeshResponse(parsed)) throw new Error('MESH DATA INVALID')
   return parsed
 }
